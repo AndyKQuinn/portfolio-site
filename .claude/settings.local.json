@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:landonorris.com)",
+      "Bash(npm install:*)",
+      "Bash(cat:*)",
+      "Bash(npm cache clean:*)",
+      "Bash(npm uninstall:*)",
+      "WebFetch(domain:codepen.io)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
