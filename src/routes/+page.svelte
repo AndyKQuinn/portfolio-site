@@ -1467,8 +1467,7 @@
 
 	/* Reduced motion preferences */
 	@media (prefers-reduced-motion: reduce) {
-		.project-card,
-		.skill-tag {
+		.project-card {
 			transition: none;
 			animation: none;
 		}
