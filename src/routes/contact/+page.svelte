@@ -1,3 +1,16 @@
+<!-- TypeScript declarations for hCaptcha -->
+<script context="module">
+	declare global {
+		interface Window {
+			hcaptcha: {
+				render: (container: string, options: Record<string, unknown>) => string;
+				reset: (widgetId: string) => void;
+				remove: (widgetId: string) => void;
+			};
+		}
+	}
+</script>
+
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { fly, fade } from 'svelte/transition';
@@ -13,6 +26,8 @@
 	let isSubmitting = false;
 	let submitStatus = '';
 	let formErrors: Record<string, string> = {};
+	let hcaptchaResponse = '';
+	let hcaptchaWidgetId: string | null = null;
 
 	// Contact methods data
 	const contactMethods = [
@@ -62,6 +77,10 @@
 			formErrors.message = 'Message must be at least 10 characters long';
 		}
 
+		if (!hcaptchaResponse) {
+			formErrors.captcha = 'Please complete the captcha';
+		}
+
 		return Object.keys(formErrors).length === 0;
 	}
 
@@ -82,8 +101,21 @@
 		submitStatus = '';
 
 		try {
-			// Simulate form submission (replace with actual endpoint)
-			await new Promise(resolve => setTimeout(resolve, 2000));
+			// Submit form with captcha
+			const response = await fetch('/api/contact', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					...formData,
+					captcha: hcaptchaResponse
+				})
+			});
+
+			if (!response.ok) {
+				throw new Error('Network response was not ok');
+			}
 
 			// Reset form
 			formData = {
@@ -94,24 +126,67 @@
 				honeypot: ''
 			};
 
+			// Reset captcha
+			if (hcaptchaWidgetId && window.hcaptcha) {
+				window.hcaptcha.reset(hcaptchaWidgetId);
+			}
+			hcaptchaResponse = '';
+
 			submitStatus = 'success';
-		} catch (error) {
+		} catch {
 			submitStatus = 'error';
 		} finally {
 			isSubmitting = false;
 		}
 	}
+
+	function onCaptchaVerify(token: string) {
+		hcaptchaResponse = token;
+		formErrors.captcha = '';
+	}
+
+	function onCaptchaExpire() {
+		hcaptchaResponse = '';
+	}
+
+	onMount(() => {
+		// Load hCaptcha script
+		const script = document.createElement('script');
+		script.src = 'https://js.hcaptcha.com/1/api.js';
+		script.async = true;
+		script.defer = true;
+		document.head.appendChild(script);
+
+		script.onload = () => {
+			// Initialize hCaptcha when script loads
+			setTimeout(() => {
+				if (window.hcaptcha && document.getElementById('hcaptcha-container')) {
+					hcaptchaWidgetId = window.hcaptcha.render('hcaptcha-container', {
+						sitekey: 'a4c6c6ea-ba7b-4c4a-a5d6-e7b3f2c1d8e9', // Replace with your actual site key
+						callback: onCaptchaVerify,
+						'expired-callback': onCaptchaExpire,
+						theme: 'dark'
+					});
+				}
+			}, 100);
+		};
+	});
 </script>
 
 <svelte:head>
 	<title>Contact - Andy K Quinn</title>
-	<meta name="description" content="Get in touch with Andy K Quinn for collaborations, opportunities, or just to say hello!" />
+	<meta
+		name="description"
+		content="Get in touch with Andy K Quinn for collaborations, opportunities, or just to say hello!"
+	/>
 </svelte:head>
 
 <section class="contact-hero">
 	<div class="hero-content" in:fly={{ y: 50, duration: 800 }}>
 		<h1>Let's Connect</h1>
-		<p class="hero-subtitle">I'd love to hear from you. Send me a message and I'll respond as soon as possible.</p>
+		<p class="hero-subtitle">
+			I'd love to hear from you. Send me a message and I'll respond as soon as possible.
+		</p>
 	</div>
 </section>
 
@@ -187,24 +262,42 @@
 						{/if}
 					</div>
 
-					<button type="submit" class="submit-btn" disabled={isSubmitting}>
+					<!-- hCaptcha -->
+					<div class="form-group">
+						<div id="hcaptcha-container" class="hcaptcha-container"></div>
+						{#if formErrors.captcha}
+							<span class="error-message">{formErrors.captcha}</span>
+						{/if}
+					</div>
+
+					<button type="submit" class="submit-btn" disabled={isSubmitting || !hcaptchaResponse}>
 						{#if isSubmitting}
 							<span class="spinner"></span>
 							Sending...
 						{:else}
 							Send Message
+							<svg
+								width="20"
+								height="20"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								style="transition: transform 0.3s ease;"
+							>
+								<line x1="5" y1="12" x2="19" y2="12"></line>
+								<polyline points="12,5 19,12 12,19"></polyline>
+							</svg>
 						{/if}
 					</button>
 
 					{#if submitStatus === 'success'}
-						<div class="status-message success" in:fade>
-							✅ Message sent successfully! I'll get back to you soon.
-						</div>
+						<div class="status-message success" in:fade>✅ Message sent successfully!</div>
 					{/if}
 
 					{#if submitStatus === 'error'}
 						<div class="status-message error" in:fade>
-							❌ Something went wrong. Please try again or contact me directly.
+							❌ Something went wrong. Please try again.
 						</div>
 					{/if}
 				</form>
@@ -214,8 +307,15 @@
 			<div class="methods-section" in:fly={{ x: 50, duration: 800, delay: 400 }}>
 				<h2>Other Ways to Reach Me</h2>
 				<div class="contact-methods">
-					{#each contactMethods as method, index}
-						<a href={method.href} class="contact-method" in:fly={{ y: 30, duration: 600, delay: 600 + index * 100 }}>
+					{#each contactMethods as method, index (method.platform)}
+						<a
+							href={method.href}
+							class="contact-method"
+							in:fly={{ y: 30, duration: 600, delay: 600 + index * 100 }}
+							target="_blank"
+							rel="noopener noreferrer"
+							data-sveltekit-reload
+						>
 							<div class="method-icon">{method.icon}</div>
 							<div class="method-content">
 								<h3>{method.platform}</h3>
@@ -233,14 +333,14 @@
 <style>
 	/* Hero Section */
 	.contact-hero {
-		height: 60vh;
+		min-height: auto;
 		background: transparent;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		position: relative;
 		overflow: hidden;
-		padding-top: 80px; /* Account for fixed header */
+		padding: 6rem 0 2rem; /* Reduced padding */
 	}
 
 	.contact-hero::before {
@@ -255,8 +355,13 @@
 	}
 
 	@keyframes float {
-		0%, 100% { transform: translateY(0px) rotate(0deg); }
-		50% { transform: translateY(-20px) rotate(2deg); }
+		0%,
+		100% {
+			transform: translateY(0px) rotate(0deg);
+		}
+		50% {
+			transform: translateY(-20px) rotate(2deg);
+		}
 	}
 
 	.hero-content {
@@ -269,9 +374,9 @@
 	}
 
 	.hero-content h1 {
-		font-size: 3.5rem;
+		font-size: 2.5rem;
 		font-weight: 700;
-		margin: 0 0 1rem 0;
+		margin: 0 0 0.5rem 0;
 		background: linear-gradient(45deg, #fff, #e0e7ff);
 		-webkit-background-clip: text;
 		-webkit-text-fill-color: transparent;
@@ -279,7 +384,7 @@
 	}
 
 	.hero-subtitle {
-		font-size: 1.2rem;
+		font-size: 1.1rem;
 		opacity: 0.9;
 		margin: 0;
 		font-weight: 300;
@@ -289,7 +394,7 @@
 	/* Contact Content */
 	.contact-content {
 		background: transparent;
-		padding: 6rem 0;
+		padding: 2rem 0 4rem;
 	}
 
 	.container {
@@ -307,15 +412,15 @@
 
 	/* Form Section */
 	.form-section h2 {
-		font-size: 2.5rem;
+		font-size: 1.8rem;
 		font-weight: 700;
-		margin: 0 0 2rem 0;
+		margin: 0 0 1.5rem 0;
 		color: white;
 	}
 
 	.contact-form {
 		background: linear-gradient(145deg, rgba(30, 15, 60, 0.95), rgba(20, 10, 40, 0.95));
-		padding: 2.5rem;
+		padding: 2rem;
 		border-radius: 16px;
 		box-shadow: 0 10px 30px rgba(139, 92, 246, 0.2);
 		border: 1px solid rgba(139, 92, 246, 0.3);
@@ -323,7 +428,7 @@
 	}
 
 	.form-group {
-		margin-bottom: 1.5rem;
+		margin-bottom: 1.25rem;
 	}
 
 	.form-group label {
@@ -337,10 +442,10 @@
 	.form-group input,
 	.form-group textarea {
 		width: 100%;
-		padding: 1rem;
+		padding: 0.75rem;
 		border: 2px solid rgba(139, 92, 246, 0.3);
 		border-radius: 8px;
-		font-size: 1rem;
+		font-size: 0.95rem;
 		font-family: 'Inter', sans-serif;
 		transition: all 0.3s ease;
 		box-sizing: border-box;
@@ -370,28 +475,98 @@
 	.submit-btn {
 		width: 100%;
 		padding: 1rem 2rem;
-		background: linear-gradient(135deg, var(--color-accent-purple) 0%, var(--color-accent-pink) 100%);
+		background: linear-gradient(
+			135deg,
+			var(--color-accent-purple) 0%,
+			var(--color-accent-pink) 100%
+		);
 		color: white;
-		border: none;
-		border-radius: 8px;
+		border: 2px solid rgba(139, 92, 246, 0.3);
+		border-radius: 12px;
 		font-size: 1.1rem;
 		font-weight: 600;
 		cursor: pointer;
-		transition: all 0.3s ease;
+		transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		gap: 0.5rem;
+		position: relative;
+		overflow: hidden;
+		backdrop-filter: blur(10px);
+		box-shadow:
+			0 10px 30px rgba(0, 0, 0, 0.3),
+			inset 0 0 20px rgba(139, 92, 246, 0.1);
+	}
+
+	.submit-btn::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%);
+		opacity: 0;
+		transition: opacity 0.3s ease;
 	}
 
 	.submit-btn:hover:not(:disabled) {
-		transform: translateY(-2px);
-		box-shadow: 0 10px 20px rgba(139, 92, 246, 0.4);
+		transform: translateY(-3px) scale(1.02);
+		border-color: rgba(139, 92, 246, 0.8);
+		box-shadow:
+			0 20px 50px rgba(139, 92, 246, 0.5),
+			inset 0 0 40px rgba(139, 92, 246, 0.2);
+	}
+
+	.submit-btn:hover:not(:disabled)::before {
+		opacity: 1;
 	}
 
 	.submit-btn:disabled {
-		opacity: 0.7;
+		opacity: 0.6;
 		cursor: not-allowed;
+		transform: none;
+		background: linear-gradient(135deg, rgba(139, 92, 246, 0.5) 0%, rgba(236, 72, 153, 0.5) 100%);
+	}
+
+	.submit-btn svg {
+		transition: transform 0.3s ease;
+	}
+
+	.submit-btn:hover:not(:disabled) {
+		transform: translateY(-3px) scale(1.02);
+		border-color: rgba(139, 92, 246, 0.8);
+		box-shadow:
+			0 20px 50px rgba(139, 92, 246, 0.5),
+			inset 0 0 40px rgba(139, 92, 246, 0.2);
+	}
+
+	.submit-btn:hover:not(:disabled)::before {
+		opacity: 1;
+	}
+
+	.submit-btn:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+		transform: none;
+		background: linear-gradient(135deg, rgba(139, 92, 246, 0.5) 0%, rgba(236, 72, 153, 0.5) 100%);
+	}
+
+	.submit-btn svg {
+		transition: transform 0.3s ease;
+	}
+
+	.submit-btn:hover:not(:disabled) svg {
+		transform: translateX(4px);
+	}
+
+	.hcaptcha-container {
+		display: flex;
+		justify-content: center;
+		margin: 1rem 0;
+	}
+
+	.hcaptcha-container :global(div) {
+		max-width: 100%;
+		overflow: hidden;
 	}
 
 	.spinner {
@@ -404,8 +579,12 @@
 	}
 
 	@keyframes spin {
-		0% { transform: rotate(0deg); }
-		100% { transform: rotate(360deg); }
+		0% {
+			transform: rotate(0deg);
+		}
+		100% {
+			transform: rotate(360deg);
+		}
 	}
 
 	.status-message {
@@ -429,21 +608,21 @@
 
 	/* Methods Section */
 	.methods-section h2 {
-		font-size: 2.5rem;
+		font-size: 1.8rem;
 		font-weight: 700;
-		margin: 0 0 2rem 0;
+		margin: 0 0 1.5rem 0;
 		color: white;
 	}
 
 	.contact-methods {
-		margin-bottom: 3rem;
+		margin-bottom: 0;
 	}
 
 	.contact-method {
 		display: flex;
 		align-items: center;
 		gap: 1rem;
-		padding: 1.5rem;
+		padding: 1.25rem;
 		background: linear-gradient(145deg, rgba(30, 15, 60, 0.95), rgba(20, 10, 40, 0.95));
 		border-radius: 12px;
 		box-shadow: 0 4px 15px rgba(139, 92, 246, 0.2);
@@ -462,15 +641,20 @@
 	}
 
 	.method-icon {
-		font-size: 2rem;
-		width: 60px;
-		height: 60px;
+		font-size: 1.5rem;
+		width: 50px;
+		height: 50px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		background: linear-gradient(135deg, var(--color-accent-purple) 0%, var(--color-accent-pink) 100%);
+		background: linear-gradient(
+			135deg,
+			var(--color-accent-purple) 0%,
+			var(--color-accent-pink) 100%
+		);
 		border-radius: 50%;
 		color: white;
+		flex-shrink: 0;
 	}
 
 	.method-content h3 {
@@ -500,12 +684,11 @@
 	/* Responsive Design */
 	@media (max-width: 768px) {
 		.contact-hero {
-			height: 50vh;
-			padding-top: 60px;
+			padding: 4rem 0 1.5rem;
 		}
 
 		.hero-content h1 {
-			font-size: 2.5rem;
+			font-size: 2rem;
 		}
 
 		.hero-subtitle {
@@ -513,17 +696,18 @@
 		}
 
 		.contact-content {
-			padding: 4rem 0;
+			padding: 1.5rem 0 3rem;
 		}
 
 		.contact-grid {
 			grid-template-columns: 1fr;
-			gap: 3rem;
+			gap: 2rem;
 		}
 
 		.form-section h2,
 		.methods-section h2 {
-			font-size: 2rem;
+			font-size: 1.5rem;
+			margin-bottom: 1rem;
 		}
 
 		.contact-form {
@@ -535,16 +719,15 @@
 		}
 
 		.method-icon {
-			width: 50px;
-			height: 50px;
-			font-size: 1.5rem;
+			width: 45px;
+			height: 45px;
+			font-size: 1.25rem;
 		}
-
 	}
 
 	@media (max-width: 480px) {
 		.hero-content h1 {
-			font-size: 2rem;
+			font-size: 1.75rem;
 		}
 
 		.container {
@@ -552,7 +735,7 @@
 		}
 
 		.contact-form {
-			padding: 1rem;
+			padding: 1.25rem;
 		}
 	}
 </style>

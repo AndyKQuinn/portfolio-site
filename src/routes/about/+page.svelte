@@ -1,113 +1,111 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { fly, fade, scale } from 'svelte/transition';
+	import { fly, fade } from 'svelte/transition';
 	import { quintOut } from 'svelte/easing';
 
-	let { children } = $props();
 	let scrollY = 0;
-	let windowHeight = 0;
 	let isVisible: Record<string, boolean> = {};
 	let parallaxElements: Record<string, HTMLElement | undefined> = {};
 
-	// Carousel state
-	let currentPillarIndex = $state(0);
-	let carouselContainer: HTMLElement;
+	// Tab state for proficiencies
+	let activeTab = 0;
+	let isPaused = false;
+	let intervalId: NodeJS.Timeout;
+	let tabContentVisible = true;
+	let proficienciesContainer: HTMLElement;
 
-	// Carousel navigation functions
-	function nextPillar() {
-		currentPillarIndex = (currentPillarIndex + 1) % skillPillars.length;
-	}
+	// Character Stats
+	const stats = [
+		{ name: 'Code Quality', value: 90, max: 100, color: '#8b5cf6' },
+		{ name: 'Problem Solving', value: 95, max: 100, color: '#ec4899' },
+		{ name: 'Communication', value: 90, max: 100, color: '#06b6d4' },
+		{ name: 'Learning Speed', value: 85, max: 100, color: '#10b981' },
+		{ name: 'Creativity', value: 80, max: 100, color: '#f59e0b' },
+		{ name: 'Team Synergy', value: 100, max: 100, color: '#6366f1' }
+	];
 
-	function prevPillar() {
-		currentPillarIndex = currentPillarIndex === 0 ? skillPillars.length - 1 : currentPillarIndex - 1;
-	}
+	// Skill proficiencies
+	const proficiencies = {
+		languages: [
+			{ name: 'TypeScript | JavaScript', level: 5 },
+			{ name: 'Python', level: 4 },
+			{ name: 'Golang', level: 4 }
+		],
+		frameworks: [
+			{ name: 'React', level: 5 },
+			{ name: 'SvelteKit', level: 5 },
+			{ name: 'Node', level: 5 },
+			{ name: 'Vue', level: 3 }
+		],
+		tools: [
+			{ name: 'Docker', level: 5 },
+			{ name: 'Kubernetes', level: 4 },
+			{ name: 'Helm', level: 4 },
+			{ name: 'AWS', level: 4 },
+			{ name: 'MongoDB', level: 3 },
+			{ name: 'PostgreSQL', level: 2 }
+		]
+	};
 
-	function goToPillar(index: number) {
-		currentPillarIndex = index;
-	}
-
-	// Skills pillars data
-	const skillPillars = [
+	// Current interests and projects
+	const currentInterests = [
 		{
-			title: 'Design & UX',
-			description: 'Creating intuitive and beautiful user experiences',
-			icon: '🎨',
-			skills: [
-				'User Interface Design',
-				'User Experience Research',
-				'Prototyping & Wireframing',
-				'Design Systems',
-				'Accessibility Design',
-				'Visual Design'
-			]
+			title: 'Uplift Collective',
+			description: 'Passion project to help uplift and promote amazing local community members.',
+			tags: ['Community', 'Open Source', 'Mentorship']
 		},
 		{
-			title: 'Development Operations',
-			description: 'Building scalable and maintainable applications',
-			icon: '⚙️',
-			skills: [
-				'Full-Stack Development',
-				'TypeScript & JavaScript',
-				'React & Svelte',
-				'Node.js & Python',
-				'API Design & Integration',
-				'Database Design'
-			]
+			title: 'Game Development',
+			description:
+				'Learning how to build games using Godot while leveraging AI to help with planning and execution along the way.',
+			tags: ['Godot', 'ClaudeCode', 'AI']
 		},
 		{
-			title: 'Infrastructure & Operations',
-			description: 'Deploying and managing robust systems',
-			icon: '☁️',
-			skills: [
-				'Cloud Architecture',
-				'CI/CD Pipelines',
-				'Containerization',
-				'Monitoring & Analytics',
-				'Security Implementation',
-				'Performance Optimization'
-			]
+			title: 'Content Creation',
+			description:
+				'Creating videos and documentation to help upskill the next generation of developers.',
+			tags: ['Advocacy', 'Inclusion', 'Community']
 		}
 	];
 
-	// Experience data
-	const experience = [
-		{
-			title: 'Senior Full Stack Developer',
-			company: 'Tech Innovations Inc.',
-			period: '2022 - Present',
-			description: 'Leading development of scalable web applications using modern frameworks and cloud technologies.'
-		},
-		{
-			title: 'Frontend Developer',
-			company: 'Creative Solutions Ltd.',
-			period: '2020 - 2022',
-			description: 'Built responsive user interfaces and collaborated with design teams to create exceptional user experiences.'
-		},
-		{
-			title: 'Junior Developer',
-			company: 'Startup Ventures',
-			period: '2019 - 2020',
-			description: 'Developed and maintained web applications while learning modern development practices and tools.'
-		}
-	];
+	// Tab management functions
+	const switchTab = async () => {
+		if (isPaused) return;
 
-	// Education data
-	const education = [
-		{
-			degree: 'Bachelor of Computer Science',
-			school: 'University of Technology',
-			year: '2019',
-			description: 'Specialized in software engineering and human-computer interaction'
+		tabContentVisible = false;
+
+		// Wait for fade out - reduced for smoother transition
+		setTimeout(() => {
+			activeTab = activeTab === 0 ? 1 : 0;
+			tabContentVisible = true;
+		}, 300);
+	};
+
+	const startAutoTransition = () => {
+		intervalId = setInterval(switchTab, 5000);
+	};
+
+	const stopAutoTransition = () => {
+		if (intervalId) {
+			clearInterval(intervalId);
 		}
-	];
+	};
+
+	const handleMouseEnter = () => {
+		isPaused = true;
+		stopAutoTransition();
+	};
+
+	const handleMouseLeave = () => {
+		isPaused = false;
+		startAutoTransition();
+	};
 
 	onMount(() => {
-		windowHeight = window.innerHeight;
-
 		const handleScroll = () => {
 			scrollY = window.scrollY;
 			// Update parallax elements
-			Object.keys(parallaxElements).forEach(key => {
+			Object.keys(parallaxElements).forEach((key) => {
 				const element = parallaxElements[key];
 				if (element) {
 					const speed = key === 'hero' ? 0.5 : 0.3;
@@ -117,12 +115,12 @@
 		};
 
 		const handleResize = () => {
-			windowHeight = window.innerHeight;
+			// Handle resize if needed
 		};
 
 		const observer = new IntersectionObserver(
 			(entries) => {
-				entries.forEach(entry => {
+				entries.forEach((entry) => {
 					const section = (entry.target as HTMLElement).dataset.section;
 					if (section) {
 						isVisible[section] = entry.isIntersecting;
@@ -134,7 +132,7 @@
 
 		// Observe sections after component mounts
 		setTimeout(() => {
-			document.querySelectorAll('[data-section]').forEach(el => {
+			document.querySelectorAll('[data-section]').forEach((el) => {
 				observer.observe(el);
 			});
 		}, 100);
@@ -142,301 +140,460 @@
 		window.addEventListener('scroll', handleScroll);
 		window.addEventListener('resize', handleResize);
 
+		// Start auto transition
+		startAutoTransition();
+
+		// No need to calculate height anymore since we use fixed container height
+
 		return () => {
 			window.removeEventListener('scroll', handleScroll);
 			window.removeEventListener('resize', handleResize);
 			observer.disconnect();
+			stopAutoTransition();
 		};
 	});
-
 </script>
 
 <svelte:head>
-	<title>About Me - Portfolio</title>
-	<meta name="description" content="Learn more about my journey as a developer and my passion for creating exceptional digital experiences." />
+	<title>About - Andy K Quinn</title>
+	<meta
+		name="description"
+		content="Learn about Andy Quinn's skills, experience, and passion for full-stack development and community building"
+	/>
 </svelte:head>
 
-<!-- Hero Section with Parallax -->
-<section class="hero-section" bind:this={parallaxElements.hero}>
-	<div class="hero-content">
-		<div class="hero-text" data-section="hero" in:fly={{ y: 100, duration: 1000, easing: quintOut }}>
-			<h1>About Me</h1>
-			<p class="hero-subtitle">Passionate Developer & Digital Creator</p>
-		</div>
-		<div class="hero-image" in:scale={{ duration: 1200, delay: 300, easing: quintOut }}>
-			<div class="profile-placeholder">
-				<img src="/andy_headshot_01.png" alt="Andy Quinn" />
+<!-- Character Sheet Hero -->
+<section class="character-sheet-hero" aria-label="Character sheet introduction">
+	<div class="sheet-container">
+		<div class="sheet-header" in:fly={{ y: -50, duration: 800, easing: quintOut }}>
+			<div class="character-frame">
+				<img src="andy_headshot_01.png" alt="Andy Quinn" class="character-portrait" />
+			</div>
+			<div class="character-info">
+				<h1 class="character-name">Andy K Quinn</h1>
+				<div class="character-class">Developer • Educator • Advocate</div>
+				<div class="character-title">~ Builder of Digital and Documentation Experiences ~</div>
+			</div>
+
+			<!-- Stats with circular progress -->
+			<div class="stats-badges" role="region" aria-label="Skill statistics">
+				{#each stats as stat (stat.name)}
+					<div class="stat-badge">
+						<div class="stat-circle-container">
+							<svg class="stat-circle" viewBox="0 0 36 36">
+								<path
+									class="stat-circle-bg"
+									d="M18 2.0845
+										a 15.9155 15.9155 0 0 1 0 31.831
+										a 15.9155 15.9155 0 0 1 0 -31.831"
+									fill="none"
+									stroke="rgba(139, 92, 246, 0.2)"
+									stroke-width="3"
+								/>
+								<path
+									class="stat-circle-fill"
+									d="M18 2.0845
+										a 15.9155 15.9155 0 0 1 0 31.831
+										a 15.9155 15.9155 0 0 1 0 -31.831"
+									fill="none"
+									stroke={stat.color}
+									stroke-width="3"
+									stroke-dasharray="{stat.value}, 100"
+									stroke-linecap="round"
+								/>
+							</svg>
+							<div class="stat-circle-value" style="color: {stat.color};">{stat.value}</div>
+						</div>
+						<div class="stat-badge-content">
+							<span class="stat-badge-name">{stat.name}</span>
+						</div>
+					</div>
+				{/each}
 			</div>
 		</div>
-	</div>
-	<div class="scroll-indicator">
-		<div class="scroll-arrow"></div>
-	</div>
-</section>
 
-<!-- About Section -->
-<section class="about-section" data-section="about">
-	<div class="container">
-		<div class="section-header" in:fly={{ y: 50, duration: 800, delay: 200 }}>
-			<h2>My Story</h2>
-			<div class="section-divider"></div>
-		</div>
-		<div class="about-content" in:fade={{ duration: 1000, delay: 400 }}>
-			<div class="about-text">
-				<p>
-					I'm a passionate full-stack developer and educator that favors TypeScript but also enjoys Python and Golang. My focus is building performant, scalable experiences with emphasis on documentation and welcoming user experiences.
-				</p>
-				<p>
-					I believe in the power of technology to transform ideas into reality. Whether it's building
-					scalable web applications, designing intuitive user interfaces, or exploring the latest in
-					cloud technologies, I'm always eager to learn and grow and actively pursue new learning opportunities.
-				</p>
-				<p>
-					I am also the founder of Uplift Collective, a community of individuals who are passionate about using technology to uplift and empower others. I am also a proud supporter of the LGBTQIA+ community and a staunch advocate for diversity and inclusion.
-				</p>
+		<!-- Story & Proficiencies - Merged into Hero -->
+		<div class="hero-content-grid" in:fade={{ duration: 1000, delay: 500 }}>
+			<!-- My Story Panel -->
+			<div class="story-panel panel">
+				<div class="panel-header">
+					<h2>📜 My Story</h2>
+				</div>
+				<div class="panel-content">
+					<p>
+						I am a lifelong technology enthusiast who is passionate about helping people and
+						building awesome things together. I am a polyglot developer with affinity towards
+						working in TypeScript, Python and Golang. I have experience with a variety of
+						technologies and frameworks, including React, Angular, Vue, Node.js, Django, Flask, and
+						many more.
+					</p>
+					<p>
+						My transition from childhood to adulthood was - like for many - laden with hurdles and
+						hardships. Through battling homelessness and unexpectedly becoming a young widow, I
+						discovered I am nothing if not resilient. Through daily learning practices and chasing
+						curiosity, I taught myself how to build applications in multiple languages and
+						ultimately pivoted careers from technical writing into software engineering, and
+						eventually landing a role as a software engineering coach at a major financial
+						institution.
+					</p>
+					<p>
+						With a few years of coaching experience, I decided to focus exclusively on building <i
+							>compelling, accessible and consumable</i
+						>
+						user experiences. Despite it often feeling like "just pushing pixels around", proper user
+						experiences and documentation are vital for user acceptance, with responsiveness and accessible
+						designs being of equal importance. I focus my time and energy working to better understand
+						how humans interact with technology and how to design experiences that are intuitive and
+						enjoyable.
+					</p>
+				</div>
 			</div>
-		</div>
-	</div>
-</section>
 
-<!-- Skills Section -->
-<section class="skills-section" data-section="skills">
-	<div class="container">
-		<div class="section-header" in:fly={{ y: 50, duration: 800 }}>
-			<h2>Skills & Expertise</h2>
-			<div class="section-divider"></div>
-		</div>
-		<div class="carousel-container">
-			<div class="carousel-wrapper" bind:this={carouselContainer}>
-				<div class="carousel-track" style="transform: translateX(-{currentPillarIndex * 100}%)">
-					{#each skillPillars as pillar, index}
-						<div class="pillar-card">
-							<div class="pillar-header">
-								<div class="pillar-icon">{pillar.icon}</div>
-								<h3>{pillar.title}</h3>
-								<p class="pillar-description">{pillar.description}</p>
+			<!-- Proficiencies Panel with Tabs -->
+			<div
+				class="proficiencies-panel panel"
+				on:mouseenter={handleMouseEnter}
+				on:mouseleave={handleMouseLeave}
+				role="region"
+				aria-label="Skills and proficiencies"
+			>
+				<header class="panel-header">
+					<h2 id="proficiencies-heading">⚔️ Proficiencies</h2>
+					<div class="tab-indicators" role="tablist" aria-labelledby="proficiencies-heading">
+						<button
+							class="tab-indicator {activeTab === 0 ? 'active' : ''}"
+							role="tab"
+							aria-selected={activeTab === 0}
+							aria-controls="tab-0"
+							aria-label="Languages and frameworks tab"
+						></button>
+						<button
+							class="tab-indicator {activeTab === 1 ? 'active' : ''}"
+							role="tab"
+							aria-selected={activeTab === 1}
+							aria-controls="tab-1"
+							aria-label="Tools and platforms tab"
+						></button>
+					</div>
+				</header>
+				<div class="panel-content" bind:this={proficienciesContainer}>
+					<div class="tab-container">
+						<!-- Tab 0: Languages & Frameworks -->
+						<div
+							class="tab-content tab-0"
+							class:active={activeTab === 0}
+							class:visible={tabContentVisible && activeTab === 0}
+							id="tab-0"
+							role="tabpanel"
+							aria-labelledby="proficiencies-heading"
+							aria-hidden={activeTab !== 0}
+						>
+							<div class="proficiency-group">
+								<h3>Languages</h3>
+								{#each proficiencies.languages as skill (skill.name)}
+									<div class="skill-proficiency">
+										<span class="skill-name">{skill.name}</span>
+										<div
+											class="skill-dots"
+											role="img"
+											aria-label="{skill.name}: {skill.level} out of 5 stars"
+										>
+											{#each { length: 5 } as _, i (i)}
+												<span class="dot" class:filled={i < skill.level} aria-hidden="true"></span>
+											{/each}
+										</div>
+									</div>
+								{/each}
 							</div>
-							<div class="pillar-skills">
-								{#each pillar.skills as skill, skillIndex}
-									<div class="skill-item" style="animation-delay: {skillIndex * 0.1}s">
-										<span class="skill-text">{skill}</span>
+
+							<div class="proficiency-group">
+								<h3>Frameworks</h3>
+								{#each proficiencies.frameworks as skill (skill.name)}
+									<div class="skill-proficiency">
+										<span class="skill-name">{skill.name}</span>
+										<div
+											class="skill-dots"
+											role="img"
+											aria-label="{skill.name}: {skill.level} out of 5 stars"
+										>
+											{#each { length: 5 } as _, i (i)}
+												<span class="dot" class:filled={i < skill.level} aria-hidden="true"></span>
+											{/each}
+										</div>
 									</div>
 								{/each}
 							</div>
 						</div>
-					{/each}
-				</div>
-			</div>
 
-			<!-- Navigation Controls -->
-			<div class="carousel-controls">
-				<button class="carousel-btn prev-btn" onclick={prevPillar} aria-label="Previous skill pillar">
-					<svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-						<path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-					</svg>
-				</button>
-
-				<div class="carousel-indicators">
-					{#each skillPillars as _, index}
-						<button
-							class="indicator {currentPillarIndex === index ? 'active' : ''}"
-							onclick={() => goToPillar(index)}
-							aria-label="Go to {skillPillars[index].title}"
-						></button>
-					{/each}
-				</div>
-
-				<button class="carousel-btn next-btn" onclick={nextPillar} aria-label="Next skill pillar">
-					<svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-						<path d="M9 18L15 12L9 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-					</svg>
-				</button>
-			</div>
-		</div>
-	</div>
-</section>
-
-<!-- Experience Section -->
-<section class="experience-section" data-section="experience">
-	<div class="container">
-		<div class="section-header" in:fly={{ y: 50, duration: 800 }}>
-			<h2>Professional Experience</h2>
-			<div class="section-divider"></div>
-		</div>
-		<div class="timeline">
-			{#each experience as job, index}
-				<div class="timeline-item"
-					in:fly={{ x: index % 2 === 0 ? -100 : 100, duration: 800, delay: index * 200 }}>
-					<div class="timeline-marker"></div>
-					<div class="timeline-content">
-						<div class="job-period">{job.period}</div>
-						<h3>{job.title}</h3>
-						<h4>{job.company}</h4>
-						<p>{job.description}</p>
+						<!-- Tab 1: Tools & Platforms -->
+						<div
+							class="tab-content tab-1"
+							class:active={activeTab === 1}
+							class:visible={tabContentVisible && activeTab === 1}
+							id="tab-1"
+							role="tabpanel"
+							aria-labelledby="proficiencies-heading"
+							aria-hidden={activeTab !== 1}
+						>
+							<div class="proficiency-group">
+								<h3>Tools & Platforms</h3>
+								{#each proficiencies.tools as skill (skill.name)}
+									<div class="skill-proficiency">
+										<span class="skill-name">{skill.name}</span>
+										<div
+											class="skill-dots"
+											role="img"
+											aria-label="{skill.name}: {skill.level} out of 5 stars"
+										>
+											{#each { length: 5 } as _, i (i)}
+												<span class="dot" class:filled={i < skill.level} aria-hidden="true"></span>
+											{/each}
+										</div>
+									</div>
+								{/each}
+							</div>
+						</div>
 					</div>
 				</div>
-			{/each}
+			</div>
 		</div>
 	</div>
 </section>
 
-<!-- Education Section -->
-<section class="education-section" data-section="education">
+<!-- Quote Section -->
+<section class="quote-section" data-section="quote" aria-label="Personal philosophy">
+	<div class="container">
+		<div class="quote-container" in:fly={{ y: 30, duration: 800 }}>
+			<div class="quote-decoration quote-decoration-left" aria-hidden="true">
+				<svg viewBox="0 0 24 24" fill="currentColor">
+					<path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z" />
+				</svg>
+			</div>
+			<blockquote class="quote-content">
+				<p class="quote-text">"Strong opinions, weakly held."</p>
+				<footer class="quote-author">— Paul Saffo</footer>
+			</blockquote>
+			<div class="quote-decoration quote-decoration-right" aria-hidden="true">
+				<svg viewBox="0 0 24 24" fill="currentColor">
+					<path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z" />
+				</svg>
+			</div>
+		</div>
+	</div>
+</section>
+
+<!-- Current Interests & Projects -->
+<section class="interests-section" data-section="interests" aria-labelledby="interests-heading">
 	<div class="container">
 		<div class="section-header" in:fly={{ y: 50, duration: 800 }}>
-			<h2>Education</h2>
-			<div class="section-divider"></div>
+			<h2 id="interests-heading">Current Interests & Projects</h2>
 		</div>
-		<div class="education-grid">
-			{#each education as edu, index}
-				<div class="education-card"
-					in:fly={{ y: 50, duration: 600, delay: index * 200 }}>
-					<div class="education-year">{edu.year}</div>
-					<h3>{edu.degree}</h3>
-					<h4>{edu.school}</h4>
-					<p>{edu.description}</p>
-				</div>
+		<div class="quests-grid" role="list">
+			{#each currentInterests as interest, i (interest.title)}
+				<article
+					class="quest-card"
+					in:fly={{ y: 50, duration: 600, delay: i * 150 }}
+					role="listitem"
+				>
+					<h3>{interest.title}</h3>
+					<p>{interest.description}</p>
+					<div class="quest-tags" role="list" aria-label="Project tags">
+						{#each interest.tags as tag (tag)}
+							<span class="quest-tag" role="listitem">{tag}</span>
+						{/each}
+					</div>
+				</article>
 			{/each}
 		</div>
 	</div>
 </section>
 
 <!-- Call to Action -->
-<section class="cta-section" data-section="cta">
+<section class="cta-section" data-section="cta" aria-labelledby="cta-heading">
 	<div class="container">
 		<div class="cta-content" in:fade={{ duration: 800, delay: 200 }}>
-			<h2>Let's Work Together</h2>
+			<h2 id="cta-heading">Let's Work Together</h2>
 			<p>I'm always excited to take on new challenges and collaborate on interesting projects.</p>
 			<div class="cta-buttons">
-				<a href="/contact" class="btn btn-primary">Contact Me</a>
+				<a
+					href="/contact"
+					class="btn btn-primary"
+					aria-label="Navigate to contact page to get in touch">Contact Me</a
+				>
 			</div>
 		</div>
 	</div>
 </section>
 
 <style>
-	/* Hero Section */
-	.hero-section {
-		height: 100vh;
-		background: transparent;
-		position: relative;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		overflow: hidden;
-		padding-top: 80px; /* Account for fixed header */
+	/* Character Sheet Hero */
+	.character-sheet-hero {
+		min-height: auto;
+		padding: 4rem 2rem 3rem;
+		background: linear-gradient(180deg, var(--color-deep-purple) 0%, #0a0015 100%);
+		margin-top: 2rem;
 	}
 
-	.hero-section::before {
+	.sheet-container {
+		max-width: 1200px;
+		margin: 0 auto;
+	}
+
+	.sheet-header {
+		display: grid;
+		grid-template-columns: auto 1fr auto;
+		gap: 2rem;
+		margin-bottom: 1.5rem;
+		padding: 2rem;
+		background: linear-gradient(145deg, rgba(139, 92, 246, 0.1) 0%, rgba(236, 72, 153, 0.1) 100%);
+		border: 2px solid rgba(139, 92, 246, 0.3);
+		border-radius: 16px;
+		position: relative;
+		overflow: hidden;
+	}
+
+	.sheet-header::before {
 		content: '';
 		position: absolute;
 		top: 0;
 		left: 0;
 		right: 0;
-		bottom: 0;
-		background: transparent;
-		animation: float 20s ease-in-out infinite;
+		height: 4px;
+		background: linear-gradient(90deg, var(--color-accent-purple), var(--color-accent-pink));
 	}
 
-	@keyframes float {
-		0%, 100% { transform: translateY(0px) rotate(0deg); }
-		50% { transform: translateY(-20px) rotate(2deg); }
-	}
-
-	.hero-content {
+	.character-frame {
+		position: relative;
 		display: flex;
 		align-items: center;
-		gap: 4rem;
-		max-width: 1200px;
-		width: 100%;
-		padding: 0 2rem;
-		z-index: 2;
-		position: relative;
 	}
 
-	.hero-text {
-		flex: 1;
-		color: white;
+	.character-portrait {
+		width: 250px;
+		height: 250px;
+		border-radius: 16px;
+		border: 4px solid var(--color-accent-purple);
+		box-shadow:
+			0 0 30px rgba(139, 92, 246, 0.5),
+			inset 0 0 20px rgba(0, 0, 0, 0.3);
+		object-fit: cover;
 	}
 
-	.hero-text h1 {
+	.character-info {
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		gap: 0.25rem;
+	}
+
+	.character-name {
+		font-family: 'Cinzel', serif;
 		font-size: 4rem;
 		font-weight: 700;
-		margin: 0 0 1rem 0;
-		background: linear-gradient(45deg, #fff, #e0e7ff);
+		margin: 0;
+		line-height: 1.1;
+		text-align: left;
+		background: linear-gradient(
+			135deg,
+			#ffffff,
+			var(--color-accent-purple),
+			var(--color-accent-pink)
+		);
+		background-clip: text;
 		-webkit-background-clip: text;
 		-webkit-text-fill-color: transparent;
-		background-clip: text;
-		line-height: 1.1;
+		text-shadow: 0 0 40px rgba(139, 92, 246, 0.5);
 	}
 
-	.hero-subtitle {
-		font-size: 1.5rem;
-		opacity: 0.9;
-		margin: 0;
-		font-weight: 300;
+	.character-class {
+		font-family: 'Inter', sans-serif;
+		font-size: 1.4rem;
+		color: var(--color-accent-purple);
+		font-weight: 600;
+		letter-spacing: 1px;
+		line-height: 1.4;
+		text-align: left;
 	}
 
-	.hero-image {
-		flex: 1;
+	.character-title {
+		font-family: 'Cinzel', serif;
+		font-size: 1.25rem;
+		color: rgba(255, 255, 255, 0.7);
+		font-style: italic;
+		line-height: 1.4;
+		text-align: left;
+	}
+
+	/* Stats with circular progress */
+	.stats-badges {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 0.75rem;
+		align-content: start;
+	}
+
+	.stat-badge {
 		display: flex;
-		justify-content: center;
-	}
-
-	.profile-placeholder {
-		width: 300px;
-		height: 300px;
-		border-radius: 50%;
-		background: linear-gradient(45deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
-		border: 3px solid rgba(255, 255, 255, 0.3);
-		backdrop-filter: blur(10px);
-		display: flex;
+		flex-direction: column;
 		align-items: center;
-		justify-content: center;
-		font-size: 1.2rem;
-		color: white;
+		gap: 0.5rem;
+		padding: 0.75rem;
+		background: rgba(0, 0, 0, 0.2);
+		border: 2px solid rgba(139, 92, 246, 0.3);
+		border-radius: 12px;
+		transition: all 0.3s ease;
+	}
+
+	.stat-badge:hover {
+		transform: translateY(-3px);
+		box-shadow: 0 8px 20px rgba(139, 92, 246, 0.4);
+		background: rgba(0, 0, 0, 0.3);
+		border-color: rgba(139, 92, 246, 0.5);
+	}
+
+	.stat-circle-container {
 		position: relative;
-		overflow: hidden;
+		width: 50px;
+		height: 50px;
 	}
 
-	.profile-placeholder::before {
-		content: '';
+	.stat-circle {
+		width: 100%;
+		height: 100%;
+		transform: rotate(-90deg);
+	}
+
+	.stat-circle-fill {
+		transition: stroke-dasharray 1s ease-in-out;
+	}
+
+	.stat-circle-value {
 		position: absolute;
-		top: -50%;
-		left: -50%;
-		width: 200%;
-		height: 200%;
-		background: conic-gradient(transparent, rgba(255, 255, 255, 0.1), transparent);
-		animation: rotate 4s linear infinite;
-	}
-
-	@keyframes rotate {
-		100% { transform: rotate(360deg); }
-	}
-
-	.scroll-indicator {
-		position: absolute;
-		bottom: 2rem;
+		top: 50%;
 		left: 50%;
-		transform: translateX(-50%);
-		color: white;
-		opacity: 0.7;
-		animation: bounce 2s infinite;
+		transform: translate(-50%, -50%);
+		font-family: 'Courier New', monospace;
+		font-size: 1rem;
+		font-weight: 900;
+		text-shadow: 0 0 15px currentColor;
 	}
 
-	.scroll-arrow {
-		width: 24px;
-		height: 24px;
-		border-right: 2px solid white;
-		border-bottom: 2px solid white;
-		transform: rotate(45deg);
-		margin: 0 auto;
+	.stat-badge-content {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		text-align: center;
+		gap: 0.25rem;
 	}
 
-	@keyframes bounce {
-		0%, 20%, 50%, 80%, 100% { transform: translateX(-50%) translateY(0); }
-		40% { transform: translateX(-50%) translateY(-10px); }
-		60% { transform: translateX(-50%) translateY(-5px); }
+	.stat-badge-name {
+		font-family: 'Courier New', monospace;
+		font-size: 0.65rem;
+		color: rgba(255, 255, 255, 0.8);
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		font-weight: 600;
+		line-height: 1.2;
 	}
 
 	/* Container */
@@ -446,383 +603,281 @@
 		padding: 0 2rem;
 	}
 
-	/* Section Styles */
-	.about-section, .skills-section, .experience-section, .education-section, .cta-section {
-		padding: 6rem 0;
-		position: relative;
-	}
-
-	.about-section {
-		background: transparent;
-		color: var(--color-text-light);
-	}
-
-	.about-text p {
-		color: var(--color-text-muted);
-	}
-
-	.skills-section {
-		background: transparent;
-	}
-
-	.experience-section {
-		background: transparent;
-		color: white;
-	}
-
-	.education-section {
-		background: transparent;
-	}
-
-	.cta-section {
-		background: transparent;
-		color: white;
-		text-align: center;
-	}
-
-	/* Section Headers */
-	.section-header {
-		text-align: center;
-		margin-bottom: 4rem;
-	}
-
-	.section-header h2 {
-		font-size: 3rem;
-		font-weight: 700;
-		margin: 0 0 1rem 0;
-		position: relative;
-	}
-
-	.experience-section .section-header h2 {
-		color: white;
-	}
-
-	.section-divider {
-		width: 80px;
-		height: 4px;
-		background: linear-gradient(90deg, var(--color-accent-purple) 0%, var(--color-accent-pink) 100%);
-		margin: 0 auto;
-		border-radius: 2px;
-	}
-
-	/* About Content */
-	.about-content {
-		max-width: 800px;
-		margin: 0 auto;
-	}
-
-	.about-text p {
-		font-size: 1.1rem;
-		line-height: 1.8;
-		margin-bottom: 1.5rem;
-		color: #4a5568;
-	}
-
-	/* Skills Carousel */
-	.carousel-container {
-		max-width: 800px;
-		margin: 0 auto;
-		position: relative;
-	}
-
-	.carousel-wrapper {
-		overflow: hidden;
-		border-radius: 24px;
-		position: relative;
-	}
-
-	.carousel-track {
-		display: flex;
-		transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-		will-change: transform;
-	}
-
-	.pillar-card {
-		background: linear-gradient(145deg, var(--color-dark-purple) 0%, var(--color-deep-purple) 100%);
-		padding: 3rem 2rem;
-		border-radius: 24px;
-		box-shadow:
-			0 20px 40px rgba(139, 92, 246, 0.2),
-			0 4px 12px rgba(139, 92, 246, 0.1);
-		border: 1px solid rgba(139, 92, 246, 0.3);
-		position: relative;
-		overflow: hidden;
-		flex: 0 0 100%;
-		width: 100%;
-	}
-
-	.pillar-card::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		height: 4px;
-		background: linear-gradient(90deg, var(--color-accent-purple), var(--color-accent-pink));
-		border-radius: 24px 24px 0 0;
-	}
-
-	/* Carousel Controls */
-	.carousel-controls {
-		display: flex;
-		align-items: center;
-		justify-content: center;
+	/* Hero Content Grid - Story & Proficiencies merged into hero */
+	.hero-content-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
 		gap: 2rem;
-		margin-top: 3rem;
+		margin-top: 2rem;
 	}
 
-	.carousel-btn {
-		background: linear-gradient(135deg, var(--color-accent-purple) 0%, var(--color-accent-pink) 100%);
-		border: none;
-		border-radius: 50%;
-		width: 50px;
-		height: 50px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		color: white;
-		cursor: pointer;
+	.panel {
+		background: linear-gradient(145deg, rgba(139, 92, 246, 0.1) 0%, rgba(236, 72, 153, 0.1) 100%);
+		border: 2px solid rgba(139, 92, 246, 0.3);
+		border-radius: 16px;
+		overflow: hidden;
 		transition: all 0.3s ease;
-		box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
 	}
 
-	.carousel-btn:hover {
-		transform: scale(1.1);
-		box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+	.panel:hover {
+		border-color: var(--color-accent-purple);
+		box-shadow: 0 10px 30px rgba(139, 92, 246, 0.3);
 	}
 
-	.carousel-btn:active {
-		transform: scale(0.95);
-	}
-
-	.carousel-indicators {
+	.panel-header {
+		background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(236, 72, 153, 0.2));
+		padding: 1rem 1.5rem;
+		border-bottom: 2px solid rgba(139, 92, 246, 0.3);
 		display: flex;
-		gap: 1rem;
+		justify-content: space-between;
 		align-items: center;
 	}
 
-	.indicator {
+	.panel-header h2 {
+		font-family: 'Cinzel', serif;
+		font-size: 1.8rem;
+		margin: 0;
+		color: white;
+		text-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+	}
+
+	.panel-content {
+		padding: 1.5rem;
+	}
+
+	.panel-content p {
+		color: var(--color-text-muted);
+		line-height: 1.8;
+		margin-bottom: 1.25rem;
+		font-size: 1.05rem;
+	}
+
+	.panel-content p:last-child {
+		margin-bottom: 0;
+	}
+
+	/* Proficiencies */
+	.proficiency-group {
+		margin-bottom: 2rem;
+	}
+
+	.proficiency-group:last-child {
+		margin-bottom: 0;
+	}
+
+	.proficiency-group h3 {
+		font-family: 'Courier New', monospace;
+		font-size: 0.9rem;
+		text-transform: uppercase;
+		letter-spacing: 2px;
+		color: var(--color-accent-purple);
+		margin-bottom: 1rem;
+		font-weight: 700;
+	}
+
+	.skill-proficiency {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 0.75rem 0;
+		border-bottom: 1px solid rgba(139, 92, 246, 0.15);
+	}
+
+	.skill-proficiency:last-child {
+		border-bottom: none;
+	}
+
+	.skill-name {
+		font-size: 1.05rem;
+		color: white;
+		font-weight: 500;
+	}
+
+	.skill-dots {
+		display: flex;
+		gap: 0.5rem;
+	}
+
+	.dot {
 		width: 12px;
 		height: 12px;
 		border-radius: 50%;
-		border: none;
-		background: rgba(102, 126, 234, 0.3);
-		cursor: pointer;
+		border: 2px solid rgba(139, 92, 246, 0.5);
+		background: transparent;
 		transition: all 0.3s ease;
 	}
 
-	.indicator.active {
-		background: linear-gradient(135deg, var(--color-accent-purple) 0%, var(--color-accent-pink) 100%);
-		transform: scale(1.3);
-	}
-
-	.indicator:hover {
-		background: rgba(102, 126, 234, 0.6);
-		transform: scale(1.1);
-	}
-
-	.pillar-header {
-		text-align: center;
-		margin-bottom: 2.5rem;
-	}
-
-	.pillar-icon {
-		font-size: 3.5rem;
-		margin-bottom: 1.5rem;
-		display: block;
-		filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
-	}
-
-	.pillar-card h3 {
-		font-size: 1.8rem;
-		font-weight: 700;
-		margin: 0 0 1rem 0;
+	.dot.filled {
 		background: linear-gradient(135deg, var(--color-accent-purple), var(--color-accent-pink));
-		-webkit-background-clip: text;
-		-webkit-text-fill-color: transparent;
-		background-clip: text;
-		line-height: 1.2;
+		box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
 	}
 
-	.pillar-description {
-		font-size: 1.1rem;
-		color: var(--color-text-muted);
-		line-height: 1.6;
-		margin: 0;
-		font-weight: 400;
-	}
-
-	.pillar-skills {
-		display: grid;
-		grid-template-columns: repeat(2, 1fr);
-		gap: 1.5rem;
-		margin-top: 1rem;
-	}
-
-	.skill-item {
-		position: relative;
-		padding: 1.2rem 1rem;
-		background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(236, 72, 153, 0.1) 100%);
-		border-radius: 12px;
-		border: 1px solid rgba(139, 92, 246, 0.3);
-		transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-		transform: translateY(0);
-		animation: slideInUp 0.6s ease-out forwards;
-		opacity: 0;
-	}
-
-	.skill-item:nth-child(odd) {
-		transform: translateX(-20px);
-	}
-
-	.skill-item:nth-child(even) {
-		transform: translateX(20px);
-	}
-
-	.skill-item:hover {
-		transform: translateY(-8px) scale(1.02);
-		background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(236, 72, 153, 0.2) 100%);
-		border-color: var(--color-accent-purple);
-		box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
-	}
-
-	.skill-item::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		width: 3px;
-		height: 100%;
-		background: linear-gradient(180deg, var(--color-accent-purple), var(--color-accent-pink));
-		border-radius: 0 2px 2px 0;
-		opacity: 0;
-		transition: opacity 0.3s ease;
-	}
-
-	.skill-item:hover::before {
-		opacity: 1;
-	}
-
-	.skill-text {
-		font-size: 0.95rem;
-		color: var(--color-text-light);
-		font-weight: 600;
-		line-height: 1.3;
-		display: block;
-		position: relative;
-	}
-
-	@keyframes slideInUp {
-		from {
-			opacity: 0;
-			transform: translateY(30px);
-		}
-		to {
-			opacity: 1;
-			transform: translateY(0);
-		}
-	}
-
-	/* Timeline */
-	.timeline {
-		position: relative;
-		max-width: 800px;
-		margin: 0 auto;
-	}
-
-	.timeline::before {
-		content: '';
-		position: absolute;
-		left: 50%;
-		top: 0;
-		bottom: 0;
-		width: 2px;
-		background: rgba(255, 255, 255, 0.3);
-		transform: translateX(-50%);
-	}
-
-	.timeline-item {
-		position: relative;
-		margin-bottom: 3rem;
+	/* Tab functionality styles */
+	.tab-indicators {
 		display: flex;
+		gap: 0.5rem;
 		align-items: center;
 	}
 
-	.timeline-item:nth-child(odd) {
-		flex-direction: row;
-	}
-
-	.timeline-item:nth-child(even) {
-		flex-direction: row-reverse;
-	}
-
-	.timeline-marker {
-		width: 16px;
-		height: 16px;
-		background: white;
+	.tab-indicator {
+		width: 8px;
+		height: 8px;
 		border-radius: 50%;
+		background: rgba(139, 92, 246, 0.3);
+		transition: all 0.3s ease;
+		border: none;
+		cursor: default;
+		padding: 0;
+	}
+
+	.tab-indicator.active {
+		background: var(--color-accent-purple);
+		box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+		transform: scale(1.2);
+	}
+
+	.tab-indicator:focus {
+		outline: 2px solid var(--color-accent-purple);
+		outline-offset: 2px;
+	}
+
+	.tab-container {
+		position: relative;
+		min-height: 400px; /* Fixed height to prevent box resizing */
+		overflow: hidden;
+	}
+
+	.tab-content {
 		position: absolute;
-		left: 50%;
-		transform: translateX(-50%);
-		z-index: 2;
-		border: 3px solid #667eea;
+		top: 0;
+		left: 0;
+		right: 0;
+		opacity: 0;
+		transform: translateY(10px);
+		transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+		will-change: opacity, transform;
+		pointer-events: none;
 	}
 
-	.timeline-content {
-		background: rgba(255, 255, 255, 0.1);
-		backdrop-filter: blur(10px);
-		padding: 2rem;
-		border-radius: 16px;
-		width: calc(50% - 2rem);
-		border: 1px solid rgba(255, 255, 255, 0.2);
+	.tab-content.active {
+		pointer-events: auto;
 	}
 
-	.job-period {
-		font-size: 0.9rem;
-		color: #e0e7ff;
-		font-weight: 600;
-		margin-bottom: 0.5rem;
+	.tab-content.visible {
+		opacity: 1;
+		transform: translateY(0);
 	}
 
-	.timeline-content h3 {
-		font-size: 1.3rem;
-		margin: 0 0 0.5rem 0;
-		color: white;
-	}
-
-	.timeline-content h4 {
-		font-size: 1.1rem;
-		margin: 0 0 1rem 0;
-		color: #cbd5e0;
-	}
-
-	.timeline-content p {
-		margin: 0;
-		color: #e2e8f0;
-		line-height: 1.6;
-	}
-
-	/* Education Grid */
-	.education-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-		gap: 2rem;
-		max-width: 800px;
-		margin: 0 auto;
-	}
-
-	.education-card {
-		background: var(--color-dark-purple);
-		padding: 2.5rem;
-		border-radius: 16px;
-		box-shadow: 0 10px 30px rgba(139, 92, 246, 0.2);
-		transition: transform 0.3s ease, box-shadow 0.3s ease;
-		border: 1px solid rgba(139, 92, 246, 0.3);
+	/* Quote Section */
+	.quote-section {
+		padding: 4rem 0;
+		background: #0a0015;
 		position: relative;
 		overflow: hidden;
 	}
 
-	.education-card::before {
+	.quote-container {
+		position: relative;
+		max-width: 900px;
+		margin: 0 auto;
+		display: flex;
+		align-items: center;
+		gap: 2rem;
+		padding: 1rem;
+		border: 2px solid rgba(139, 92, 246, 0.4);
+		border-radius: 20px;
+		box-shadow: 0 10px 40px rgba(139, 92, 246, 0.3);
+		transition: all 0.4s ease;
+	}
+
+	.quote-container:hover {
+		border-color: rgba(139, 92, 246, 0.7);
+		box-shadow: 0 15px 50px rgba(139, 92, 246, 0.5);
+		background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(236, 72, 153, 0.1) 100%);
+		transform: translateY(-3px);
+	}
+
+	.quote-decoration {
+		flex-shrink: 0;
+		width: 60px;
+		height: 60px;
+		opacity: 0.5;
+		color: var(--color-accent-purple);
+	}
+
+	.quote-decoration-left {
+		transform: rotate(180deg);
+	}
+
+	.quote-decoration svg {
+		width: 100%;
+		height: 100%;
+		filter: drop-shadow(0 0 20px rgba(139, 92, 246, 0.5));
+	}
+
+	.quote-content {
+		flex: 1;
+		margin: 0;
+		text-align: center;
+	}
+
+	.quote-text {
+		font-family: 'Cinzel', serif;
+		font-size: 1.5rem;
+		line-height: 1.8;
+		color: #ffffff;
+		margin: 0 0 1rem 0;
+		font-style: italic;
+		text-shadow: 0 2px 10px rgba(139, 92, 246, 0.5);
+		opacity: 1;
+	}
+
+	.quote-author {
+		font-family: 'Inter', sans-serif;
+		font-size: 1.1rem;
+		color: var(--color-accent-purple);
+		font-weight: 600;
+		letter-spacing: 1px;
+	}
+
+	/* Current Interests & Projects */
+	.interests-section {
+		padding: 3rem 0;
+		background: #0a0015;
+	}
+
+	.section-header {
+		text-align: center;
+		margin-bottom: 2rem;
+	}
+
+	.section-header h2 {
+		font-family: 'Cinzel', serif;
+		font-size: 2.5rem;
+		font-weight: 700;
+		margin: 0;
+		color: white;
+		text-shadow: 0 0 30px rgba(139, 92, 246, 0.5);
+	}
+
+	.quests-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+		gap: 1.5rem;
+		margin-top: 2rem;
+	}
+
+	.quest-card {
+		background: linear-gradient(145deg, rgba(139, 92, 246, 0.1) 0%, rgba(236, 72, 153, 0.1) 100%);
+		border: 2px solid rgba(139, 92, 246, 0.3);
+		border-radius: 16px;
+		padding: 2rem;
+		position: relative;
+		transition: all 0.3s ease;
+		overflow: hidden;
+	}
+
+	.quest-card::before {
 		content: '';
 		position: absolute;
 		top: 0;
@@ -832,37 +887,50 @@
 		background: linear-gradient(90deg, var(--color-accent-purple), var(--color-accent-pink));
 	}
 
-	.education-card:hover {
+	.quest-card:hover {
+		border-color: var(--color-accent-purple);
 		transform: translateY(-5px);
-		box-shadow: 0 20px 40px rgba(139, 92, 246, 0.4);
+		box-shadow: 0 15px 40px rgba(139, 92, 246, 0.4);
 	}
 
-	.education-year {
-		font-size: 0.9rem;
-		background: linear-gradient(135deg, var(--color-accent-purple), var(--color-accent-pink));
-		-webkit-background-clip: text;
-		-webkit-text-fill-color: transparent;
-		background-clip: text;
-		font-weight: 600;
-		margin-bottom: 0.5rem;
-	}
-
-	.education-card h3 {
-		font-size: 1.4rem;
-		margin: 0 0 0.5rem 0;
+	.quest-card h3 {
+		font-family: 'Cinzel', serif;
+		font-size: 1.5rem;
 		color: white;
-	}
-
-	.education-card h4 {
-		font-size: 1.1rem;
 		margin: 0 0 1rem 0;
-		color: var(--color-text-muted);
+		text-shadow: 0 0 15px rgba(139, 92, 246, 0.3);
 	}
 
-	.education-card p {
-		margin: 0;
+	.quest-card p {
 		color: var(--color-text-muted);
-		line-height: 1.6;
+		line-height: 1.7;
+		margin-bottom: 1.5rem;
+		font-size: 1rem;
+	}
+
+	.quest-tags {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+
+	.quest-tag {
+		font-family: 'Courier New', monospace;
+		font-size: 0.8rem;
+		color: var(--color-accent-purple);
+		background: rgba(139, 92, 246, 0.15);
+		padding: 0.4rem 0.8rem;
+		border-radius: 6px;
+		border: 1px solid rgba(139, 92, 246, 0.3);
+		font-weight: 600;
+	}
+
+	/* CTA Section */
+	.cta-section {
+		padding: 6rem 0;
+		background: #0a0015;
+		color: white;
+		text-align: center;
 	}
 
 	/* CTA Section */
@@ -873,9 +941,9 @@
 	}
 
 	.cta-content p {
-		font-size: 1.2rem;
-		margin-bottom: 2rem;
-		color: #e2e8f0;
+		font-size: 1.1rem;
+		color: var(--color-text-muted);
+		margin-bottom: 1.5rem;
 		max-width: 600px;
 		margin-left: auto;
 		margin-right: auto;
@@ -883,124 +951,180 @@
 
 	.cta-buttons {
 		display: flex;
-		gap: 1rem;
 		justify-content: center;
+		gap: 0.8rem;
 		flex-wrap: wrap;
 	}
 
 	.btn {
 		padding: 1rem 2rem;
-		border-radius: 8px;
+		border-radius: 12px;
 		text-decoration: none;
 		font-weight: 600;
-		transition: all 0.3s ease;
-		border: 2px solid transparent;
+		transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+		border: 2px solid rgba(139, 92, 246, 0.3);
+		position: relative;
+		overflow: hidden;
+		backdrop-filter: blur(10px);
+		box-shadow:
+			0 10px 30px rgba(0, 0, 0, 0.3),
+			inset 0 0 20px rgba(139, 92, 246, 0.1);
 	}
 
 	.btn-primary {
-		background: linear-gradient(135deg, var(--color-accent-purple) 0%, var(--color-accent-pink) 100%);
+		background: linear-gradient(
+			135deg,
+			var(--color-accent-purple) 0%,
+			var(--color-accent-pink) 100%
+		);
 		color: white;
 	}
 
-	.btn-primary:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 10px 20px rgba(139, 92, 246, 0.4);
+	.btn::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%);
+		opacity: 0;
+		transition: opacity 0.3s ease;
 	}
 
+	.btn-primary:hover {
+		transform: translateY(-3px) scale(1.02);
+		border-color: rgba(139, 92, 246, 0.8);
+		box-shadow:
+			0 20px 50px rgba(139, 92, 246, 0.5),
+			inset 0 0 40px rgba(139, 92, 246, 0.2);
+	}
+
+	.btn-primary:hover::before {
+		opacity: 1;
+	}
 
 	/* Responsive Design */
+	@media (max-width: 1024px) {
+		.hero-content-grid {
+			grid-template-columns: 1fr;
+			gap: 1.5rem;
+		}
+	}
+
+	@media (max-width: 1024px) {
+		.sheet-header {
+			grid-template-columns: auto 1fr;
+			grid-template-rows: auto auto;
+		}
+
+		.stats-badges {
+			grid-column: 1 / 3;
+			grid-template-columns: repeat(3, 1fr);
+		}
+	}
+
 	@media (max-width: 768px) {
-		.hero-content {
-			flex-direction: column;
+		.character-sheet-hero {
+			padding: 2rem 1rem 1.5rem;
+		}
+
+		.sheet-header {
+			grid-template-columns: 1fr;
+			grid-template-rows: auto auto auto;
 			text-align: center;
-			gap: 2rem;
+			gap: 1.5rem;
+			padding: 1.5rem;
 		}
 
-		.hero-text h1 {
-			font-size: 2.5rem;
+		.character-frame {
+			justify-content: center;
 		}
 
-		.hero-subtitle {
+		.character-portrait {
+			width: 180px;
+			height: 180px;
+		}
+
+		.character-info {
+			align-items: center;
+		}
+
+		.character-name {
+			font-size: 3rem;
+			text-align: center;
+		}
+
+		.character-class {
+			font-size: 1.3rem;
+			text-align: center;
+		}
+
+		.character-title {
+			font-size: 1.15rem;
+			text-align: center;
+		}
+
+		.stats-badges {
+			grid-column: 1;
+			grid-template-columns: repeat(2, 1fr);
+			gap: 0.5rem;
+		}
+
+		.stat-badge {
+			padding: 0.75rem 0.5rem;
+		}
+
+		.stat-circle-container {
+			width: 70px;
+			height: 70px;
+		}
+
+		.stat-circle-value {
+			font-size: 1.4rem;
+		}
+
+		.stat-badge-name {
+			font-size: 0.8rem;
+		}
+
+		.quote-container {
+			flex-direction: column;
+			padding: 2rem 1.5rem;
+			gap: 1rem;
+		}
+
+		.quote-decoration {
+			width: 40px;
+			height: 40px;
+		}
+
+		.quote-decoration-left,
+		.quote-decoration-right {
+			display: none;
+		}
+
+		.quote-text {
 			font-size: 1.2rem;
+			line-height: 1.6;
 		}
 
-		.profile-placeholder {
-			width: 200px;
-			height: 200px;
+		.quote-author {
+			font-size: 1rem;
 		}
 
 		.section-header h2 {
 			font-size: 2rem;
 		}
 
-		.timeline::before {
-			left: 1rem;
-		}
-
-		.timeline-item {
-			flex-direction: column !important;
-			align-items: flex-start;
-			padding-left: 3rem;
-		}
-
-		.timeline-marker {
-			left: 1rem;
-			transform: translateX(-50%);
-		}
-
-		.timeline-content {
-			width: 100%;
-		}
-
-		.carousel-container {
-			max-width: 100%;
-			padding: 0 1rem;
-		}
-
-		.pillar-card {
-			padding: 2rem 1.5rem;
-		}
-
-		.pillar-icon {
-			font-size: 2.5rem;
-			margin-bottom: 1rem;
-		}
-
-		.pillar-card h3 {
-			font-size: 1.5rem;
-		}
-
-		.pillar-skills {
+		.quests-grid {
 			grid-template-columns: 1fr;
 			gap: 1rem;
 		}
 
-		.skill-item {
-			padding: 1rem 0.8rem;
-			transform: translateX(0) !important;
+		.cta-content h2 {
+			font-size: 1.8rem;
 		}
 
-		.skill-item:hover {
-			transform: translateY(-4px) scale(1.01) !important;
-		}
-
-		.carousel-controls {
-			gap: 1.5rem;
-			margin-top: 2rem;
-		}
-
-		.carousel-btn {
-			width: 45px;
-			height: 45px;
-		}
-
-		.indicator {
-			width: 10px;
-			height: 10px;
-		}
-
-		.education-grid {
-			grid-template-columns: 1fr;
+		.cta-content p {
+			font-size: 0.9rem;
 		}
 
 		.cta-buttons {

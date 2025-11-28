@@ -56,23 +56,31 @@
 		font-family: 'Inter', sans-serif;
 		font-size: 1.4rem;
 		font-weight: 800;
-		background: linear-gradient(135deg, #ffffff 0%, #a78bfa 50%, #ec4899 100%);
-		background-size: 200% 200%;
+		background: linear-gradient(
+			120deg,
+			#ffffff 0%,
+			#ffffff 30%,
+			#a78bfa 45%,
+			#ec4899 55%,
+			#ffffff 70%,
+			#ffffff 100%
+		);
+		background-size: 200% 100%;
 		-webkit-background-clip: text;
 		-webkit-text-fill-color: transparent;
 		background-clip: text;
 		text-decoration: none;
 		letter-spacing: -0.5px;
 		transition: all 0.4s ease;
-		animation: gradientShift 4s ease infinite;
+		animation: shimmer 4s ease-in-out infinite;
 	}
 
-	@keyframes gradientShift {
+	@keyframes shimmer {
 		0%, 100% {
-			background-position: 0% 50%;
+			background-position: 150% 0;
 		}
 		50% {
-			background-position: 100% 50%;
+			background-position: -50% 0;
 		}
 	}
 
