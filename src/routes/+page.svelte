@@ -160,6 +160,32 @@
 		hoveredSkillData = null;
 	}
 
+	function handleTechClick(
+		tech: { name: string; description: string },
+		event: Event,
+		suffix: string
+	) {
+		event.stopPropagation();
+		const target = event.currentTarget as HTMLElement;
+		const rect = target.getBoundingClientRect();
+		const techKey = tech.name + suffix;
+
+		// If already showing this tooltip, hide it
+		if (hoveredSkill === techKey) {
+			hoveredSkill = null;
+			hoveredSkillData = null;
+		} else {
+			// Show new tooltip
+			hoveredSkill = techKey;
+			hoveredSkillData = {
+				name: tech.name,
+				description: tech.description,
+				x: rect.left + rect.width / 2,
+				y: rect.top
+			};
+		}
+	}
+
 	let isModalOpen = $state(false);
 	let selectedProject = $state<(typeof projects)[0] | null>(null);
 
@@ -402,16 +428,16 @@
 				<div class="carousel-3d">
 					<div class="carousel-track frontend-track" class:paused={hoveredSkill !== null}>
 						{#each [...frontendTech, ...frontendTech, ...frontendTech, ...frontendTech] as tech, i (tech.name + '-' + i)}
-							<div
+							<button
 								class="tech-card"
 								onmouseenter={(e) => handleTechHover(tech, e, '-frontend')}
 								onmouseleave={handleTechLeave}
-								role="button"
-								tabindex="0"
+								onclick={(e) => handleTechClick(tech, e, '-frontend')}
+								type="button"
 							>
 								<div class="tech-icon">{tech.icon}</div>
 								<div class="tech-name">{tech.name}</div>
-							</div>
+							</button>
 						{/each}
 					</div>
 				</div>
@@ -423,16 +449,16 @@
 				<div class="carousel-3d">
 					<div class="carousel-track backend-track" class:paused={hoveredSkill !== null}>
 						{#each [...backendTech, ...backendTech, ...backendTech, ...backendTech] as tech, i (tech.name + '-' + i)}
-							<div
+							<button
 								class="tech-card"
 								onmouseenter={(e) => handleTechHover(tech, e, '-backend')}
 								onmouseleave={handleTechLeave}
-								role="button"
-								tabindex="0"
+								onclick={(e) => handleTechClick(tech, e, '-backend')}
+								type="button"
 							>
 								<div class="tech-icon">{tech.icon}</div>
 								<div class="tech-name">{tech.name}</div>
-							</div>
+							</button>
 						{/each}
 					</div>
 				</div>
@@ -442,6 +468,22 @@
 
 	<!-- Global Tooltip Portal -->
 	{#if hoveredSkillData}
+		<!-- Backdrop for mobile to close tooltip -->
+		<div
+			class="tooltip-backdrop"
+			onclick={() => {
+				hoveredSkill = null;
+				hoveredSkillData = null;
+			}}
+			onkeydown={(e) => {
+				if (e.key === 'Enter' || e.key === ' ') {
+					hoveredSkill = null;
+					hoveredSkillData = null;
+				}
+			}}
+			role="button"
+			tabindex="-1"
+		></div>
 		<div class="global-tooltip" style="left: {hoveredSkillData.x}px; top: {hoveredSkillData.y}px;">
 			<div class="tooltip-content">
 				<strong>{hoveredSkillData.name}</strong>
@@ -531,7 +573,7 @@
 					</div>
 					<div class="stat-item">
 						<div class="stat-label">DURATION</div>
-						<div class="stat-value">{selectedProject.years}</div>
+						<div class="stat-value">{selectedProject.years} years</div>
 					</div>
 				</div>
 
@@ -1068,9 +1110,14 @@
 			inset 0 0 20px rgba(139, 92, 246, 0.1);
 		overflow: visible;
 		z-index: 2;
+		font-family: inherit;
+		outline: none;
+		-webkit-tap-highlight-color: transparent;
+		touch-action: manipulation;
 	}
 
-	.tech-card:hover {
+	.tech-card:hover,
+	.tech-card:focus-visible {
 		background: linear-gradient(145deg, rgba(139, 92, 246, 0.3) 0%, rgba(236, 72, 153, 0.3) 100%);
 		border-color: rgba(139, 92, 246, 0.8);
 		z-index: 1000;
@@ -1089,6 +1136,14 @@
 		text-align: center;
 		text-shadow: 0 0 10px rgba(139, 92, 246, 0.8);
 		letter-spacing: 0.5px;
+	}
+
+	.tooltip-backdrop {
+		position: fixed;
+		inset: 0;
+		z-index: 9999;
+		background: transparent;
+		cursor: default;
 	}
 
 	.global-tooltip {
