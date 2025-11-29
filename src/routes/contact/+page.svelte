@@ -1,19 +1,12 @@
-<!-- TypeScript declarations for hCaptcha -->
-<script context="module">
-	declare global {
-		interface Window {
-			hcaptcha: {
-				render: (container: string, options: Record<string, unknown>) => string;
-				reset: (widgetId: string) => void;
-				remove: (widgetId: string) => void;
-			};
-		}
-	}
-</script>
-
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { fly, fade } from 'svelte/transition';
+	import Button from '../../components/Button.svelte';
+
+	// Handle external link clicks
+	function handleExternalLink(url: string) {
+		window.open(url, '_blank', 'noopener,noreferrer');
+	}
 
 	let form: HTMLFormElement;
 	let formData = {
@@ -196,7 +189,7 @@
 			<!-- Contact Form -->
 			<div class="form-section" in:fly={{ x: -50, duration: 800, delay: 200 }}>
 				<h2>Send a Message</h2>
-				<form bind:this={form} on:submit={handleSubmit} class="contact-form">
+				<form bind:this={form} onsubmit={handleSubmit} class="contact-form">
 					<!-- Honeypot field (hidden) -->
 					<input
 						type="text"
@@ -270,26 +263,28 @@
 						{/if}
 					</div>
 
-					<button type="submit" class="submit-btn" disabled={isSubmitting || !hcaptchaResponse}>
-						{#if isSubmitting}
-							<span class="spinner"></span>
-							Sending...
-						{:else}
-							Send Message
-							<svg
-								width="20"
-								height="20"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="2"
-								style="transition: transform 0.3s ease;"
-							>
-								<line x1="5" y1="12" x2="19" y2="12"></line>
-								<polyline points="12,5 19,12 12,19"></polyline>
-							</svg>
-						{/if}
-					</button>
+					<div class="submit-btn-wrapper">
+						<Button type="submit" disabled={isSubmitting || !hcaptchaResponse}>
+							{#if isSubmitting}
+								<span class="spinner"></span>
+								Sending...
+							{:else}
+								Send Message
+								<svg
+									width="20"
+									height="20"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+									class="arrow-icon"
+								>
+									<line x1="5" y1="12" x2="19" y2="12"></line>
+									<polyline points="12,5 19,12 12,19"></polyline>
+								</svg>
+							{/if}
+						</Button>
+					</div>
 
 					{#if submitStatus === 'success'}
 						<div class="status-message success" in:fade>✅ Message sent successfully!</div>
@@ -308,13 +303,12 @@
 				<h2>Other Ways to Reach Me</h2>
 				<div class="contact-methods">
 					{#each contactMethods as method, index (method.platform)}
-						<a
-							href={method.href}
+						<button
+							type="button"
 							class="contact-method"
 							in:fly={{ y: 30, duration: 600, delay: 600 + index * 100 }}
-							target="_blank"
-							rel="noopener noreferrer"
-							data-sveltekit-reload
+							onclick={() => handleExternalLink(method.href)}
+							data-href={method.href}
 						>
 							<div class="method-icon">{method.icon}</div>
 							<div class="method-content">
@@ -322,7 +316,7 @@
 								<p class="method-value">{method.value}</p>
 								<p class="method-description">{method.description}</p>
 							</div>
-						</a>
+						</button>
 					{/each}
 				</div>
 			</div>
@@ -472,89 +466,23 @@
 		display: block;
 	}
 
-	.submit-btn {
+	.submit-btn-wrapper {
 		width: 100%;
-		padding: 1rem 2rem;
-		background: linear-gradient(
-			135deg,
-			var(--color-accent-purple) 0%,
-			var(--color-accent-pink) 100%
-		);
-		color: white;
-		border: 2px solid rgba(139, 92, 246, 0.3);
-		border-radius: 12px;
-		font-size: 1.1rem;
-		font-weight: 600;
-		cursor: pointer;
-		transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+	}
+
+	.submit-btn-wrapper :global(button) {
+		width: 100%;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		gap: 0.5rem;
-		position: relative;
-		overflow: hidden;
-		backdrop-filter: blur(10px);
-		box-shadow:
-			0 10px 30px rgba(0, 0, 0, 0.3),
-			inset 0 0 20px rgba(139, 92, 246, 0.1);
 	}
 
-	.submit-btn::before {
-		content: '';
-		position: absolute;
-		inset: 0;
-		background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%);
-		opacity: 0;
-		transition: opacity 0.3s ease;
-	}
-
-	.submit-btn:hover:not(:disabled) {
-		transform: translateY(-3px) scale(1.02);
-		border-color: rgba(139, 92, 246, 0.8);
-		box-shadow:
-			0 20px 50px rgba(139, 92, 246, 0.5),
-			inset 0 0 40px rgba(139, 92, 246, 0.2);
-	}
-
-	.submit-btn:hover:not(:disabled)::before {
-		opacity: 1;
-	}
-
-	.submit-btn:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
-		transform: none;
-		background: linear-gradient(135deg, rgba(139, 92, 246, 0.5) 0%, rgba(236, 72, 153, 0.5) 100%);
-	}
-
-	.submit-btn svg {
+	.submit-btn-wrapper :global(.arrow-icon) {
 		transition: transform 0.3s ease;
 	}
 
-	.submit-btn:hover:not(:disabled) {
-		transform: translateY(-3px) scale(1.02);
-		border-color: rgba(139, 92, 246, 0.8);
-		box-shadow:
-			0 20px 50px rgba(139, 92, 246, 0.5),
-			inset 0 0 40px rgba(139, 92, 246, 0.2);
-	}
-
-	.submit-btn:hover:not(:disabled)::before {
-		opacity: 1;
-	}
-
-	.submit-btn:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
-		transform: none;
-		background: linear-gradient(135deg, rgba(139, 92, 246, 0.5) 0%, rgba(236, 72, 153, 0.5) 100%);
-	}
-
-	.submit-btn svg {
-		transition: transform 0.3s ease;
-	}
-
-	.submit-btn:hover:not(:disabled) svg {
+	.submit-btn-wrapper :global(button:hover:not(:disabled) .arrow-icon) {
 		transform: translateX(4px);
 	}
 
@@ -632,6 +560,11 @@
 		transition: all 0.3s ease;
 		border: 1px solid rgba(139, 92, 246, 0.3);
 		backdrop-filter: blur(10px);
+		cursor: pointer;
+		width: 100%;
+		text-align: left;
+		font-family: inherit;
+		font-size: inherit;
 	}
 
 	.contact-method:hover {

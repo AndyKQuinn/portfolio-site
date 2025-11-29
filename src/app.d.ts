@@ -6,7 +6,15 @@ declare global {
 			user: import('$lib/server/auth').SessionValidationResult['user'];
 			session: import('$lib/server/auth').SessionValidationResult['session'];
 		}
-	} // interface Error {}
+	}
+
+	interface Window {
+		hcaptcha: {
+			render: (container: string, options: Record<string, unknown>) => string;
+			reset: (widgetId: string) => void;
+			remove: (widgetId: string) => void;
+		};
+	}
 	// interface Locals {}
 } // interface PageData {}
 // interface PageState {}

@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { fly, fade } from 'svelte/transition';
 	import { quintOut } from 'svelte/easing';
+	import Button from '../../components/Button.svelte';
 
 	let scrollY = 0;
 	let isVisible: Record<string, boolean> = {};
@@ -29,23 +30,61 @@
 		languages: [
 			{ name: 'TypeScript | JavaScript', level: 5 },
 			{ name: 'Python', level: 4 },
-			{ name: 'Golang', level: 4 }
+			{ name: 'Golang', level: 4 },
+			{ name: 'Ruby', level: 3 },
+			{ name: 'Java', level: 2 },
+			{ name: 'C++', level: 1 },
+			{ name: 'Cobol', level: 1 }
 		],
 		frameworks: [
 			{ name: 'React', level: 5 },
 			{ name: 'SvelteKit', level: 5 },
-			{ name: 'Node', level: 5 },
-			{ name: 'Vue', level: 3 }
+			{ name: 'Nuxt', level: 4 },
+			{ name: 'Vue', level: 3 },
+			{ name: 'Django', level: 2 }
 		],
 		tools: [
 			{ name: 'Docker', level: 5 },
+			{ name: 'Github', level: 5 },
+			{ name: 'Gitlab', level: 5 },
 			{ name: 'Kubernetes', level: 4 },
 			{ name: 'Helm', level: 4 },
 			{ name: 'AWS', level: 4 },
+			{ name: 'Terraform', level: 4 },
+			{ name: 'PostgreSQL', level: 4 },
+			{ name: 'DevContainers', level: 4 },
+			{ name: 'Azure', level: 3 },
+			{ name: 'GCP', level: 3 },
 			{ name: 'MongoDB', level: 3 },
-			{ name: 'PostgreSQL', level: 2 }
+			{ name: 'Turso', level: 1 }
 		]
 	};
+
+	// Organize skills by proficiency level
+	const languageSkills = {
+		effective: proficiencies.languages
+			.filter((s) => s.level >= 4)
+			.sort((a, b) => b.level - a.level),
+		familiar: proficiencies.languages.filter((s) => s.level <= 3).sort((a, b) => b.level - a.level)
+	};
+
+	const frameworkSkills = {
+		effective: proficiencies.frameworks
+			.filter((s) => s.level >= 4)
+			.sort((a, b) => b.level - a.level),
+		familiar: proficiencies.frameworks.filter((s) => s.level <= 3).sort((a, b) => b.level - a.level)
+	};
+
+	const toolSkills = {
+		effective: proficiencies.tools.filter((s) => s.level >= 4).sort((a, b) => b.level - a.level),
+		familiar: proficiencies.tools.filter((s) => s.level <= 3).sort((a, b) => b.level - a.level)
+	};
+
+	const tabs = [
+		{ id: 0, label: 'Languages', skills: languageSkills },
+		{ id: 1, label: 'Frameworks', skills: frameworkSkills },
+		{ id: 2, label: 'Tools & Platforms', skills: toolSkills }
+	];
 
 	// Current interests and projects
 	const currentInterests = [
@@ -76,7 +115,7 @@
 
 		// Wait for fade out - reduced for smoother transition
 		setTimeout(() => {
-			activeTab = activeTab === 0 ? 1 : 0;
+			activeTab = (activeTab + 1) % 3;
 			tabContentVisible = true;
 		}, 300);
 	};
@@ -252,107 +291,88 @@
 			<!-- Proficiencies Panel with Tabs -->
 			<div
 				class="proficiencies-panel panel"
-				on:mouseenter={handleMouseEnter}
-				on:mouseleave={handleMouseLeave}
+				onmouseenter={handleMouseEnter}
+				onmouseleave={handleMouseLeave}
 				role="region"
 				aria-label="Skills and proficiencies"
 			>
 				<header class="panel-header">
 					<h2 id="proficiencies-heading">⚔️ Proficiencies</h2>
 					<div class="tab-indicators" role="tablist" aria-labelledby="proficiencies-heading">
-						<button
-							class="tab-indicator {activeTab === 0 ? 'active' : ''}"
-							role="tab"
-							aria-selected={activeTab === 0}
-							aria-controls="tab-0"
-							aria-label="Languages and frameworks tab"
-						></button>
-						<button
-							class="tab-indicator {activeTab === 1 ? 'active' : ''}"
-							role="tab"
-							aria-selected={activeTab === 1}
-							aria-controls="tab-1"
-							aria-label="Tools and platforms tab"
-						></button>
+						{#each tabs as tab (tab.id)}
+							<button
+								class="tab-indicator {activeTab === tab.id ? 'active' : ''}"
+								role="tab"
+								aria-selected={activeTab === tab.id}
+								aria-controls="tab-{tab.id}"
+								aria-label="{tab.label} tab"
+								onclick={() => {
+									activeTab = tab.id;
+									tabContentVisible = true;
+								}}
+							></button>
+						{/each}
 					</div>
 				</header>
 				<div class="panel-content" bind:this={proficienciesContainer}>
 					<div class="tab-container">
-						<!-- Tab 0: Languages & Frameworks -->
-						<div
-							class="tab-content tab-0"
-							class:active={activeTab === 0}
-							class:visible={tabContentVisible && activeTab === 0}
-							id="tab-0"
-							role="tabpanel"
-							aria-labelledby="proficiencies-heading"
-							aria-hidden={activeTab !== 0}
-						>
-							<div class="proficiency-group">
-								<h3>Languages</h3>
-								{#each proficiencies.languages as skill (skill.name)}
-									<div class="skill-proficiency">
-										<span class="skill-name">{skill.name}</span>
-										<div
-											class="skill-dots"
-											role="img"
-											aria-label="{skill.name}: {skill.level} out of 5 stars"
-										>
-											{#each { length: 5 } as _, i (i)}
-												<span class="dot" class:filled={i < skill.level} aria-hidden="true"></span>
-											{/each}
-										</div>
-									</div>
-								{/each}
-							</div>
+						{#each tabs as tab (tab.id)}
+							<div
+								class="tab-content tab-{tab.id}"
+								class:active={activeTab === tab.id}
+								class:visible={tabContentVisible && activeTab === tab.id}
+								id="tab-{tab.id}"
+								role="tabpanel"
+								aria-labelledby="proficiencies-heading"
+								aria-hidden={activeTab !== tab.id}
+							>
+								<div class="proficiency-group">
+									<h3>{tab.label}</h3>
 
-							<div class="proficiency-group">
-								<h3>Frameworks</h3>
-								{#each proficiencies.frameworks as skill (skill.name)}
-									<div class="skill-proficiency">
-										<span class="skill-name">{skill.name}</span>
-										<div
-											class="skill-dots"
-											role="img"
-											aria-label="{skill.name}: {skill.level} out of 5 stars"
-										>
-											{#each { length: 5 } as _, i (i)}
-												<span class="dot" class:filled={i < skill.level} aria-hidden="true"></span>
+									<!-- Effective Skills (4-5 stars) -->
+									{#if tab.skills.effective.length > 0}
+										<div class="skill-tier">
+											<h4 class="tier-label effective">⚡ Effective</h4>
+											{#each tab.skills.effective as skill (skill.name)}
+												<div class="skill-proficiency">
+													<span class="skill-name">{skill.name}</span>
+													<div
+														class="skill-dots"
+														role="img"
+														aria-label="{skill.name}: {skill.level} out of 5 stars"
+													>
+														{#each Array.from({ length: 5 }, (_, i) => i) as i (i)}
+															<span class="dot {i < skill.level ? 'filled' : ''}"></span>
+														{/each}
+													</div>
+												</div>
 											{/each}
 										</div>
-									</div>
-								{/each}
-							</div>
-						</div>
+									{/if}
 
-						<!-- Tab 1: Tools & Platforms -->
-						<div
-							class="tab-content tab-1"
-							class:active={activeTab === 1}
-							class:visible={tabContentVisible && activeTab === 1}
-							id="tab-1"
-							role="tabpanel"
-							aria-labelledby="proficiencies-heading"
-							aria-hidden={activeTab !== 1}
-						>
-							<div class="proficiency-group">
-								<h3>Tools & Platforms</h3>
-								{#each proficiencies.tools as skill (skill.name)}
-									<div class="skill-proficiency">
-										<span class="skill-name">{skill.name}</span>
-										<div
-											class="skill-dots"
-											role="img"
-											aria-label="{skill.name}: {skill.level} out of 5 stars"
-										>
-											{#each { length: 5 } as _, i (i)}
-												<span class="dot" class:filled={i < skill.level} aria-hidden="true"></span>
+									<!-- Familiar Skills (1-3 stars) -->
+									{#if tab.skills.familiar.length > 0}
+										<div class="skill-tier">
+											<h4 class="tier-label familiar">📚 Familiar</h4>
+											{#each tab.skills.familiar as skill (skill.name)}
+												<div class="skill-proficiency">
+													<span class="skill-name">{skill.name}</span>
+													<div
+														class="skill-dots"
+														role="img"
+														aria-label="{skill.name}: {skill.level} out of 5 stars"
+													>
+														{#each Array.from({ length: 5 }, (_, i) => i) as i (i)}
+															<span class="dot {i < skill.level ? 'filled' : ''}"></span>
+														{/each}
+													</div>
+												</div>
 											{/each}
 										</div>
-									</div>
-								{/each}
+									{/if}
+								</div>
 							</div>
-						</div>
+						{/each}
 					</div>
 				</div>
 			</div>
@@ -414,13 +434,7 @@
 		<div class="cta-content" in:fade={{ duration: 800, delay: 200 }}>
 			<h2 id="cta-heading">Let's Work Together</h2>
 			<p>I'm always excited to take on new challenges and collaborate on interesting projects.</p>
-			<div class="cta-buttons">
-				<a
-					href="/contact"
-					class="btn btn-primary"
-					aria-label="Navigate to contact page to get in touch">Contact Me</a
-				>
-			</div>
+			<Button href="/contact" label="Contact Me" />
 		</div>
 	</div>
 </section>
@@ -661,6 +675,32 @@
 		margin-bottom: 2rem;
 	}
 
+	.skill-tier {
+		margin-bottom: 1.5rem;
+	}
+
+	.tier-label {
+		font-family: 'Courier New', monospace;
+		font-size: 0.9rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 1px;
+		margin-bottom: 1rem;
+		padding: 0.5rem 0;
+		border-bottom: 1px solid rgba(139, 92, 246, 0.3);
+		color: rgba(255, 255, 255, 0.9);
+	}
+
+	.tier-label.effective {
+		color: #10b981;
+		border-bottom-color: rgba(16, 185, 129, 0.3);
+	}
+
+	.tier-label.familiar {
+		color: #f59e0b;
+		border-bottom-color: rgba(245, 158, 11, 0.3);
+	}
+
 	.proficiency-group:last-child {
 		margin-bottom: 0;
 	}
@@ -699,8 +739,8 @@
 	}
 
 	.dot {
-		width: 12px;
-		height: 12px;
+		width: 10px;
+		height: 10px;
 		border-radius: 50%;
 		border: 2px solid rgba(139, 92, 246, 0.5);
 		background: transparent;
@@ -743,24 +783,21 @@
 
 	.tab-container {
 		position: relative;
-		min-height: 400px; /* Fixed height to prevent box resizing */
-		overflow: hidden;
+		min-height: 400px;
+		overflow: visible;
 	}
 
 	.tab-content {
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
 		opacity: 0;
-		transform: translateY(10px);
+		transform: translateY(20px);
 		transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-		will-change: opacity, transform;
 		pointer-events: none;
+		display: none;
 	}
 
 	.tab-content.active {
 		pointer-events: auto;
+		display: block;
 	}
 
 	.tab-content.visible {

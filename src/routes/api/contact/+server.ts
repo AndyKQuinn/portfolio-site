@@ -2,7 +2,7 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { env } from '$env/dynamic/private';
 
-const HCAPTCHA_SECRET = env.HCAPTCHA_SECRET || 'ES_4c6c6ea-ba7b-4c4a-a5d6-e7b3f2c1d8e9';
+const HCAPTCHA_SECRET = env.HCAPTCHA_SITE_KEY || 'STUB_KEY';
 const HCAPTCHA_VERIFY_URL = 'https://hcaptcha.com/siteverify';
 
 interface ContactFormData {
