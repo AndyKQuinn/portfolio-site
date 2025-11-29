@@ -21,9 +21,9 @@
 			years: '3',
 			isCurrent: true,
 			missionBriefing: [
-				'I work with teams to understand pain points in their development workflow and educate them on ways to streamline processes, automate tasks, bolster application resiliecy and more. My daily focus involves seeking out pain points around the business, investigating industry-standard practices and processes for improving them, and integrating with teams to help them implement the changes with efficient, supportable, secure and scalable code patterns.',
-				'As someone who focuses heavily on streamlined user experiences, I also spend a lot of time and energy with writing technical documentation. I am a self-described documentation nerd who understands a good user interface is just as important as having a stable, performant application. I am regularly seeking out new and interesting ways to present content to end users in compelling and interesting ways, whether it be for a simple documentation website or for the end-to-end experience for an entire application platform.',
-				'I also help teams implement transparent, actionable feedback mechanisms. Feedback is a gift, but only if you are actively listening or provide mechanisms for users to express it safely or in anonymous ways. I curated multiple examples of how to capture these types of items, and bring these examples to our engagements to help show teams potential solutions they can utilize.'
+				'I work closely with development teams to identify pain points in their workflows and help them build better solutions. My focus is on streamlining processes, automating repetitive tasks, and improving application resilience. I research industry best practices and collaborate with teams to implement efficient, maintainable, secure, and scalable code patterns that make their lives easier.',
+				"I'm passionate about technical documentation and user experience. I believe good documentation is just as important as a stable, performant application. I'm always looking for creative ways to present technical content—whether it's a documentation site or a complete platform experience—that makes information accessible and easy to understand.",
+				"I help teams build transparent feedback mechanisms so they can gather actionable insights from their users. I've developed several feedback collection strategies, including anonymous channels, and I share these approaches with teams to help them improve how they listen to and learn from their users."
 			]
 		},
 		{
@@ -35,11 +35,11 @@
 			tech: ['React', 'Golang', 'Kubernetes', 'Docker', 'GCP', 'OpenStack'],
 			years: '14',
 			missionBriefing: [
-				'I supported a production notification platform used by thousands of engineers on a weekly basis. Common tasks would include reviewing health dashboards, monitoring logs, and general break/fix support. My key responsibilities included:',
-				' - Fully rewriting the entire Golang API to utilize an updated MongoDB driver.',
-				' - Enhancing the frontend with features like more-robust alert suppression options, simpler rule creation and enhanced ways of squelching alerts.',
-				" - Maintaining and streamlining the Development Operations (DevOps) team's processes and tools.",
-				' - Collaborating with cross-functional teams to ensure seamless integration and deployment of new features.'
+				'I maintained and enhanced a production notification platform used by thousands of engineers every week. My day-to-day included monitoring health dashboards, analyzing logs, and providing break/fix support. During my time on this project, I:',
+				' - Rewrote the Golang API to work with an updated MongoDB driver, which significantly improved performance and maintainability.',
+				' - Built out the frontend with better alert suppression options, simpler rule creation, and more intuitive ways to manage alerts.',
+				' - Streamlined our DevOps processes and tooling to make deployments smoother and more reliable.',
+				' - Worked with teams across the organization to integrate new features seamlessly.'
 			]
 		},
 		{
@@ -51,8 +51,8 @@
 			tech: ['React', 'TypeScript', 'GraphQL', 'Keycloak'],
 			years: '1',
 			missionBriefing: [
-				'Developed a user-friendly admin interface using Typescript and React. Utilized GraphQL for efficient data fetching and Keycloak for secure authentication.',
-				'Included panes for product management, processing refunds and integrating with external solutions for supportability and analytics.'
+				'My peer and I built an admin interface using TypeScript and React, with GraphQL for efficient data fetching and Keycloak handling authentication and authorization.',
+				'The interface included tools for managing products, processing refunds, and integrating with external services for analytics and operations support.'
 			]
 		}
 	];
@@ -1399,42 +1399,6 @@
 			padding: 1.2rem 1.75rem;
 		}
 
-		.carousels-container {
-			gap: 4rem;
-		}
-
-		.carousel-title {
-			font-size: 1.5rem;
-			letter-spacing: 2px;
-		}
-
-		.tech-card {
-			min-width: 170px;
-			height: 140px;
-			padding: 1.25rem;
-		}
-
-		.tech-icon {
-			font-size: 2.5rem;
-		}
-
-		.tech-name {
-			font-size: 1rem;
-		}
-
-		.tooltip-content {
-			min-width: 240px;
-			max-width: 300px;
-			padding: 1rem 1.25rem;
-		}
-
-		.tooltip-content strong {
-			font-size: 1rem;
-		}
-
-		.tooltip-content p {
-			font-size: 0.9rem;
-		}
 
 		.site-footer {
 			padding: 3rem 0;
@@ -1556,47 +1520,6 @@
 			font-size: 1.05rem;
 		}
 
-		.carousels-container {
-			gap: 3rem;
-		}
-
-		.carousel-title {
-			font-size: 2.25rem;
-			letter-spacing: 1.5px;
-			margin-bottom: 2rem;
-		}
-
-		.carousel-3d {
-			height: 150px;
-		}
-
-		.tech-card {
-			min-width: 150px;
-			height: 120px;
-			padding: 1rem;
-		}
-
-		.tech-icon {
-			font-size: 2rem;
-		}
-
-		.tech-name {
-			font-size: 0.9rem;
-		}
-
-		.tooltip-content {
-			min-width: 200px;
-			max-width: 260px;
-			padding: 0.85rem 1rem;
-		}
-
-		.tooltip-content strong {
-			font-size: 0.95rem;
-		}
-
-		.tooltip-content p {
-			font-size: 0.85rem;
-		}
 
 		.footer-social {
 			flex-direction: column;

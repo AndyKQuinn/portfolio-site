@@ -1,7 +1,8 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { fly, fade } from 'svelte/transition';
 	import Button from '../../components/Button.svelte';
+	import { env } from '$env/dynamic/public';
+	import enhance from 'svelte-captcha-enhance';
 
 	// Handle external link clicks
 	function handleExternalLink(url: string) {
@@ -13,14 +14,13 @@
 		name: '',
 		email: '',
 		subject: '',
-		message: '',
-		honeypot: '' // Hidden field for spam protection
+		message: ''
 	};
 	let isSubmitting = false;
 	let submitStatus = '';
 	let formErrors: Record<string, string> = {};
-	let hcaptchaResponse = '';
-	let hcaptchaWidgetId: string | null = null;
+
+	const siteKey = env.PUBLIC_HCAPTCHA_SITE_KEY || '';
 
 	// Contact methods data
 	const contactMethods = [
@@ -70,100 +70,56 @@
 			formErrors.message = 'Message must be at least 10 characters long';
 		}
 
-		if (!hcaptchaResponse) {
-			formErrors.captcha = 'Please complete the captcha';
-		}
-
 		return Object.keys(formErrors).length === 0;
 	}
 
-	async function handleSubmit(event: Event) {
-		event.preventDefault();
-
+	async function handleSubmit({ formData: data }: { formData: FormData }) {
 		if (!validateForm()) {
-			return;
-		}
-
-		// Check honeypot field
-		if (formData.honeypot) {
-			console.log('Spam detected');
 			return;
 		}
 
 		isSubmitting = true;
 		submitStatus = '';
 
-		try {
-			// Submit form with captcha
-			const response = await fetch('/api/contact', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({
-					...formData,
-					captcha: hcaptchaResponse
-				})
-			});
+		return async ({ result }: { result: any }) => {
+			try {
+				const response = await fetch('/api/contact', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({
+						name: data.get('name'),
+						email: data.get('email'),
+						subject: data.get('subject'),
+						message: data.get('message'),
+						captcha: data.get('h-captcha-response')
+					})
+				});
 
-			if (!response.ok) {
-				throw new Error('Network response was not ok');
-			}
+				const responseData = await response.json();
 
-			// Reset form
-			formData = {
-				name: '',
-				email: '',
-				subject: '',
-				message: '',
-				honeypot: ''
-			};
-
-			// Reset captcha
-			if (hcaptchaWidgetId && window.hcaptcha) {
-				window.hcaptcha.reset(hcaptchaWidgetId);
-			}
-			hcaptchaResponse = '';
-
-			submitStatus = 'success';
-		} catch {
-			submitStatus = 'error';
-		} finally {
-			isSubmitting = false;
-		}
-	}
-
-	function onCaptchaVerify(token: string) {
-		hcaptchaResponse = token;
-		formErrors.captcha = '';
-	}
-
-	function onCaptchaExpire() {
-		hcaptchaResponse = '';
-	}
-
-	onMount(() => {
-		// Load hCaptcha script
-		const script = document.createElement('script');
-		script.src = 'https://js.hcaptcha.com/1/api.js';
-		script.async = true;
-		script.defer = true;
-		document.head.appendChild(script);
-
-		script.onload = () => {
-			// Initialize hCaptcha when script loads
-			setTimeout(() => {
-				if (window.hcaptcha && document.getElementById('hcaptcha-container')) {
-					hcaptchaWidgetId = window.hcaptcha.render('hcaptcha-container', {
-						sitekey: 'a4c6c6ea-ba7b-4c4a-a5d6-e7b3f2c1d8e9', // Replace with your actual site key
-						callback: onCaptchaVerify,
-						'expired-callback': onCaptchaExpire,
-						theme: 'dark'
-					});
+				if (!response.ok) {
+					throw new Error(responseData.error || 'Network response was not ok');
 				}
-			}, 100);
+
+				// Reset form
+				formData = {
+					name: '',
+					email: '',
+					subject: '',
+					message: ''
+				};
+
+				submitStatus = 'success';
+			} catch (error) {
+				console.error('Form submission error:', error);
+				submitStatus = 'error';
+			} finally {
+				isSubmitting = false;
+			}
 		};
-	});
+	}
 </script>
 
 <svelte:head>
@@ -172,6 +128,7 @@
 		name="description"
 		content="Get in touch with Andy K Quinn for collaborations, opportunities, or just to say hello!"
 	/>
+	<script src="https://js.hcaptcha.com/1/api.js" async defer></script>
 </svelte:head>
 
 <section class="contact-hero">
@@ -189,16 +146,12 @@
 			<!-- Contact Form -->
 			<div class="form-section" in:fly={{ x: -50, duration: 800, delay: 200 }}>
 				<h2>Send a Message</h2>
-				<form bind:this={form} onsubmit={handleSubmit} class="contact-form">
-					<!-- Honeypot field (hidden) -->
-					<input
-						type="text"
-						bind:value={formData.honeypot}
-						style="display: none;"
-						tabindex="-1"
-						autocomplete="off"
-					/>
-
+				<form
+					bind:this={form}
+					method="POST"
+					use:enhance={{ type: 'hcaptcha', submit: handleSubmit }}
+					class="contact-form"
+				>
 					<div class="form-group">
 						<label for="name">Name *</label>
 						<input
@@ -257,14 +210,16 @@
 
 					<!-- hCaptcha -->
 					<div class="form-group">
-						<div id="hcaptcha-container" class="hcaptcha-container"></div>
+						<div class="hcaptcha-container">
+							<div class="h-captcha" data-sitekey={siteKey} data-theme="dark"></div>
+						</div>
 						{#if formErrors.captcha}
 							<span class="error-message">{formErrors.captcha}</span>
 						{/if}
 					</div>
 
 					<div class="submit-btn-wrapper">
-						<Button type="submit" disabled={isSubmitting || !hcaptchaResponse}>
+						<Button type="submit" disabled={isSubmitting}>
 							{#if isSubmitting}
 								<span class="spinner"></span>
 								Sending...
