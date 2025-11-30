@@ -3,7 +3,6 @@
 	import { fly, fade } from 'svelte/transition';
 	import { quintOut } from 'svelte/easing';
 	import Button from '../../components/Button.svelte';
-	import CardCarousel from '$lib/components/CardCarousel.svelte';
 
 	let scrollY = 0;
 	let isVisible: Record<string, boolean> = {};
@@ -13,8 +12,6 @@
 	let activeTab = 0;
 	let isPaused = false;
 	let intervalId: NodeJS.Timeout;
-	let tabContentVisible = true;
-	let proficienciesContainer: HTMLElement;
 
 	// Character Stats
 	const stats = [
@@ -26,69 +23,36 @@
 		{ name: 'Team Synergy', value: 100, max: 100, color: '#6366f1' }
 	];
 
-	// Skill proficiencies organized by ecosystem
-	const languageEcosystems = [
+	// Skill proficiencies
+	const proficiencies = [
 		{
-			language: 'JavaScript',
-			related: [
-				{ name: 'React' },
-				{ name: 'Vue' },
-				{ name: 'Nuxt' },
-				{ name: 'Svelte' }
-			]
+			name: 'JavaScript',
+			related: [{ name: 'React' }, { name: 'Vue' }, { name: 'Nuxt' }, { name: 'Svelte' }]
 		},
 		{
-			language: 'Golang',
-			related: [
-				{ name: 'Gin' },
-				{ name: 'Fiber' }
-			]
+			name: 'Golang',
+			related: [{ name: 'Gin' }, { name: 'Fiber' }]
 		},
 		{
-			language: 'Python',
-			related: [
-				{ name: 'Django' },
-				{ name: 'FastAPI' }
-			]
+			name: 'Python',
+			related: [{ name: 'Django' }, { name: 'FastAPI' }]
+		},
+		{
+			name: 'Docker',
+			related: [{ name: 'Kubernetes' }, { name: 'Helm' }, { name: 'DevContainers' }]
+		},
+		{
+			name: 'Git',
+			related: [{ name: 'GitHub' }, { name: 'GitLab' }, { name: 'Bitbucket' }]
+		},
+		{
+			name: 'Databases',
+			related: [{ name: 'PostgreSQL' }, { name: 'MongoDB' }]
+		},
+		{
+			name: 'Cloud',
+			related: [{ name: 'Rancher' }, { name: 'Azure' }]
 		}
-	];
-
-	const devOpsGroups = [
-		{
-			tool: 'Docker',
-			related: [
-				{ name: 'Kubernetes' },
-				{ name: 'Helm' },
-				{ name: 'DevContainers' }
-			]
-		},
-		{
-			tool: 'Git',
-			related: [
-				{ name: 'GitHub' },
-				{ name: 'GitLab' },
-				{ name: 'Bitbucket' }
-			]
-		},
-		{
-			tool: 'Databases',
-			related: [
-				{ name: 'PostgreSQL' },
-				{ name: 'MongoDB' }
-			]
-		},
-		{
-			tool: 'Cloud',
-			related: [
-				{ name: 'Rancher' },
-				{ name: 'Azure' }
-			]
-		}
-	];
-
-	const tabs = [
-		{ id: 0, label: 'Languages', groups: languageEcosystems, type: 'languages' },
-		{ id: 1, label: 'DevOps', groups: devOpsGroups, type: 'devops' }
 	];
 
 	// Current interests and projects
@@ -116,12 +80,9 @@
 	const switchTab = async () => {
 		if (isPaused) return;
 
-		tabContentVisible = false;
-
 		// Wait for fade out - reduced for smoother transition
 		setTimeout(() => {
 			activeTab = (activeTab + 1) % 2;
-			tabContentVisible = true;
 		}, 300);
 	};
 
@@ -303,29 +264,7 @@
 			>
 				<header class="panel-header">
 					<h2 id="proficiencies-heading">⚔️ Proficiencies</h2>
-					<div class="tab-indicators" role="tablist" aria-labelledby="proficiencies-heading">
-						{#each tabs as tab (tab.id)}
-							<button
-								class="tab-indicator {activeTab === tab.id ? 'active' : ''}"
-								role="tab"
-								aria-selected={activeTab === tab.id}
-								aria-controls="tab-{tab.id}"
-								aria-label="{tab.label} tab"
-								onclick={() => {
-									activeTab = tab.id;
-									tabContentVisible = true;
-								}}
-							></button>
-						{/each}
-					</div>
 				</header>
-				<div class="panel-content" bind:this={proficienciesContainer}>
-					<CardCarousel
-						languageEcosystems={languageEcosystems}
-						devOpsGroups={devOpsGroups}
-						activeTab={activeTab}
-					/>
-				</div>
 			</div>
 		</div>
 	</div>
@@ -619,54 +558,6 @@
 
 	.panel-content p:last-child {
 		margin-bottom: 0;
-	}
-
-	/* 3D Sphere Visualization */
-	.sphere-instructions {
-		text-align: center;
-		margin-bottom: 1rem;
-		padding: 0.75rem;
-		background: rgba(139, 92, 246, 0.1);
-		border-radius: 8px;
-		border: 1px solid rgba(139, 92, 246, 0.3);
-	}
-
-	.sphere-instructions p {
-		margin: 0;
-		font-family: 'Courier New', monospace;
-		font-size: 0.9rem;
-		color: rgba(255, 255, 255, 0.8);
-		font-weight: 600;
-		letter-spacing: 0.5px;
-	}
-
-	/* Tab functionality styles */
-	.tab-indicators {
-		display: flex;
-		gap: 0.5rem;
-		align-items: center;
-	}
-
-	.tab-indicator {
-		width: 8px;
-		height: 8px;
-		border-radius: 50%;
-		background: rgba(139, 92, 246, 0.3);
-		transition: all 0.3s ease;
-		border: none;
-		cursor: default;
-		padding: 0;
-	}
-
-	.tab-indicator.active {
-		background: var(--color-accent-purple);
-		box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
-		transform: scale(1.2);
-	}
-
-	.tab-indicator:focus {
-		outline: 2px solid var(--color-accent-purple);
-		outline-offset: 2px;
 	}
 
 	/* Quote Section */
@@ -974,10 +865,6 @@
 
 		.cta-content p {
 			font-size: 0.9rem;
-		}
-
-		.sphere-instructions p {
-			font-size: 0.75rem;
 		}
 	}
 </style>
