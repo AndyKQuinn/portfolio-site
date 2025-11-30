@@ -1,6 +1,5 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { verifyCaptcha } from 'svelte-captcha-enhance';
 import { env } from '$env/dynamic/private';
 
 interface ContactFormData {
@@ -29,15 +28,26 @@ export const POST: RequestHandler = async ({ request }) => {
 			return json({ error: 'Invalid email format' }, { status: 400 });
 		}
 
-		// Verify captcha using svelte-captcha-enhance
+		// Verify hCaptcha
 		const captchaSecret = env.HCAPTCHA_SECRET_KEY;
 		if (!captchaSecret) {
 			console.error('HCAPTCHA_SECRET_KEY is not configured');
 			return json({ error: 'Server configuration error' }, { status: 500 });
 		}
 
-		const isCaptchaValid = await verifyCaptcha(formData.captcha, captchaSecret);
-		if (!isCaptchaValid) {
+		const verifyResponse = await fetch('https://hcaptcha.com/siteverify', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/x-www-form-urlencoded'
+			},
+			body: new URLSearchParams({
+				secret: captchaSecret,
+				response: formData.captcha
+			})
+		});
+
+		const verifyData = await verifyResponse.json();
+		if (!verifyData.success) {
 			return json({ error: 'Captcha verification failed' }, { status: 400 });
 		}
 
