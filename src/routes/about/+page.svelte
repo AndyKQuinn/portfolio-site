@@ -3,6 +3,7 @@
 	import { fly, fade } from 'svelte/transition';
 	import { quintOut } from 'svelte/easing';
 	import Button from '../../components/Button.svelte';
+	import CardCarousel from '$lib/components/CardCarousel.svelte';
 
 	let scrollY = 0;
 	let isVisible: Record<string, boolean> = {};
@@ -25,65 +26,69 @@
 		{ name: 'Team Synergy', value: 100, max: 100, color: '#6366f1' }
 	];
 
-	// Skill proficiencies
-	const proficiencies = {
-		languages: [
-			{ name: 'TypeScript | JavaScript', level: 5 },
-			{ name: 'Python', level: 4 },
-			{ name: 'Golang', level: 4 },
-			{ name: 'Ruby', level: 3 },
-			{ name: 'Java', level: 2 },
-			{ name: 'C++', level: 1 },
-			{ name: 'Cobol', level: 1 }
-		],
-		frameworks: [
-			{ name: 'React', level: 5 },
-			{ name: 'SvelteKit', level: 5 },
-			{ name: 'Nuxt', level: 4 },
-			{ name: 'Vue', level: 3 },
-			{ name: 'Django', level: 2 }
-		],
-		tools: [
-			{ name: 'Docker', level: 5 },
-			{ name: 'Github', level: 5 },
-			{ name: 'Gitlab', level: 5 },
-			{ name: 'Kubernetes', level: 4 },
-			{ name: 'Helm', level: 4 },
-			{ name: 'AWS', level: 4 },
-			{ name: 'Terraform', level: 4 },
-			{ name: 'PostgreSQL', level: 4 },
-			{ name: 'DevContainers', level: 4 },
-			{ name: 'Azure', level: 3 },
-			{ name: 'GCP', level: 3 },
-			{ name: 'MongoDB', level: 3 },
-			{ name: 'Turso', level: 1 }
-		]
-	};
+	// Skill proficiencies organized by ecosystem
+	const languageEcosystems = [
+		{
+			language: 'JavaScript',
+			related: [
+				{ name: 'React' },
+				{ name: 'Vue' },
+				{ name: 'Nuxt' },
+				{ name: 'Svelte' }
+			]
+		},
+		{
+			language: 'Golang',
+			related: [
+				{ name: 'Gin' },
+				{ name: 'Fiber' }
+			]
+		},
+		{
+			language: 'Python',
+			related: [
+				{ name: 'Django' },
+				{ name: 'FastAPI' }
+			]
+		}
+	];
 
-	// Organize skills by proficiency level
-	const languageSkills = {
-		effective: proficiencies.languages
-			.filter((s) => s.level >= 4)
-			.sort((a, b) => b.level - a.level),
-		familiar: proficiencies.languages.filter((s) => s.level <= 3).sort((a, b) => b.level - a.level)
-	};
-
-	const frameworkSkills = {
-		effective: proficiencies.frameworks
-			.filter((s) => s.level >= 4)
-			.sort((a, b) => b.level - a.level),
-		familiar: proficiencies.frameworks.filter((s) => s.level <= 3).sort((a, b) => b.level - a.level)
-	};
-
-	const toolSkills = {
-		effective: proficiencies.tools.filter((s) => s.level >= 4).sort((a, b) => b.level - a.level),
-		familiar: proficiencies.tools.filter((s) => s.level <= 3).sort((a, b) => b.level - a.level)
-	};
+	const devOpsGroups = [
+		{
+			tool: 'Docker',
+			related: [
+				{ name: 'Kubernetes' },
+				{ name: 'Helm' },
+				{ name: 'DevContainers' }
+			]
+		},
+		{
+			tool: 'Git',
+			related: [
+				{ name: 'GitHub' },
+				{ name: 'GitLab' },
+				{ name: 'Bitbucket' }
+			]
+		},
+		{
+			tool: 'Databases',
+			related: [
+				{ name: 'PostgreSQL' },
+				{ name: 'MongoDB' }
+			]
+		},
+		{
+			tool: 'Cloud',
+			related: [
+				{ name: 'Rancher' },
+				{ name: 'Azure' }
+			]
+		}
+	];
 
 	const tabs = [
-		{ id: 0, label: 'Languages', skills: languageSkills },
-		{ id: 1, label: 'Frameworks', skills: frameworkSkills },
-		{ id: 2, label: 'Tools & Platforms', skills: toolSkills }
+		{ id: 0, label: 'Languages', groups: languageEcosystems, type: 'languages' },
+		{ id: 1, label: 'DevOps', groups: devOpsGroups, type: 'devops' }
 	];
 
 	// Current interests and projects
@@ -115,7 +120,7 @@
 
 		// Wait for fade out - reduced for smoother transition
 		setTimeout(() => {
-			activeTab = (activeTab + 1) % 3;
+			activeTab = (activeTab + 1) % 2;
 			tabContentVisible = true;
 		}, 300);
 	};
@@ -315,65 +320,11 @@
 					</div>
 				</header>
 				<div class="panel-content" bind:this={proficienciesContainer}>
-					<div class="tab-container">
-						{#each tabs as tab (tab.id)}
-							<div
-								class="tab-content tab-{tab.id}"
-								class:active={activeTab === tab.id}
-								class:visible={tabContentVisible && activeTab === tab.id}
-								id="tab-{tab.id}"
-								role="tabpanel"
-								aria-labelledby="proficiencies-heading"
-								aria-hidden={activeTab !== tab.id}
-							>
-								<div class="proficiency-group">
-									<h3>{tab.label}</h3>
-
-									<!-- Effective Skills (4-5 stars) -->
-									{#if tab.skills.effective.length > 0}
-										<div class="skill-tier">
-											<h4 class="tier-label effective">⚡ Effective</h4>
-											{#each tab.skills.effective as skill (skill.name)}
-												<div class="skill-proficiency">
-													<span class="skill-name">{skill.name}</span>
-													<div
-														class="skill-dots"
-														role="img"
-														aria-label="{skill.name}: {skill.level} out of 5 stars"
-													>
-														{#each Array.from({ length: 5 }, (_, i) => i) as i (i)}
-															<span class="dot {i < skill.level ? 'filled' : ''}"></span>
-														{/each}
-													</div>
-												</div>
-											{/each}
-										</div>
-									{/if}
-
-									<!-- Familiar Skills (1-3 stars) -->
-									{#if tab.skills.familiar.length > 0}
-										<div class="skill-tier">
-											<h4 class="tier-label familiar">📚 Familiar</h4>
-											{#each tab.skills.familiar as skill (skill.name)}
-												<div class="skill-proficiency">
-													<span class="skill-name">{skill.name}</span>
-													<div
-														class="skill-dots"
-														role="img"
-														aria-label="{skill.name}: {skill.level} out of 5 stars"
-													>
-														{#each Array.from({ length: 5 }, (_, i) => i) as i (i)}
-															<span class="dot {i < skill.level ? 'filled' : ''}"></span>
-														{/each}
-													</div>
-												</div>
-											{/each}
-										</div>
-									{/if}
-								</div>
-							</div>
-						{/each}
-					</div>
+					<CardCarousel
+						languageEcosystems={languageEcosystems}
+						devOpsGroups={devOpsGroups}
+						activeTab={activeTab}
+					/>
 				</div>
 			</div>
 		</div>
@@ -670,86 +621,23 @@
 		margin-bottom: 0;
 	}
 
-	/* Proficiencies */
-	.proficiency-group {
-		margin-bottom: 2rem;
+	/* 3D Sphere Visualization */
+	.sphere-instructions {
+		text-align: center;
+		margin-bottom: 1rem;
+		padding: 0.75rem;
+		background: rgba(139, 92, 246, 0.1);
+		border-radius: 8px;
+		border: 1px solid rgba(139, 92, 246, 0.3);
 	}
 
-	.skill-tier {
-		margin-bottom: 1.5rem;
-	}
-
-	.tier-label {
+	.sphere-instructions p {
+		margin: 0;
 		font-family: 'Courier New', monospace;
 		font-size: 0.9rem;
+		color: rgba(255, 255, 255, 0.8);
 		font-weight: 600;
-		text-transform: uppercase;
-		letter-spacing: 1px;
-		margin-bottom: 1rem;
-		padding: 0.5rem 0;
-		border-bottom: 1px solid rgba(139, 92, 246, 0.3);
-		color: rgba(255, 255, 255, 0.9);
-	}
-
-	.tier-label.effective {
-		color: #10b981;
-		border-bottom-color: rgba(16, 185, 129, 0.3);
-	}
-
-	.tier-label.familiar {
-		color: #f59e0b;
-		border-bottom-color: rgba(245, 158, 11, 0.3);
-	}
-
-	.proficiency-group:last-child {
-		margin-bottom: 0;
-	}
-
-	.proficiency-group h3 {
-		font-family: 'Courier New', monospace;
-		font-size: 0.9rem;
-		text-transform: uppercase;
-		letter-spacing: 2px;
-		color: var(--color-accent-purple);
-		margin-bottom: 1rem;
-		font-weight: 700;
-	}
-
-	.skill-proficiency {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		padding: 0.75rem 0;
-		border-bottom: 1px solid rgba(139, 92, 246, 0.15);
-	}
-
-	.skill-proficiency:last-child {
-		border-bottom: none;
-	}
-
-	.skill-name {
-		font-size: 1.05rem;
-		color: white;
-		font-weight: 500;
-	}
-
-	.skill-dots {
-		display: flex;
-		gap: 0.5rem;
-	}
-
-	.dot {
-		width: 10px;
-		height: 10px;
-		border-radius: 50%;
-		border: 2px solid rgba(139, 92, 246, 0.5);
-		background: transparent;
-		transition: all 0.3s ease;
-	}
-
-	.dot.filled {
-		background: linear-gradient(135deg, var(--color-accent-purple), var(--color-accent-pink));
-		box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+		letter-spacing: 0.5px;
 	}
 
 	/* Tab functionality styles */
@@ -779,30 +667,6 @@
 	.tab-indicator:focus {
 		outline: 2px solid var(--color-accent-purple);
 		outline-offset: 2px;
-	}
-
-	.tab-container {
-		position: relative;
-		min-height: 400px;
-		overflow: visible;
-	}
-
-	.tab-content {
-		opacity: 0;
-		transform: translateY(20px);
-		transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-		pointer-events: none;
-		display: none;
-	}
-
-	.tab-content.active {
-		pointer-events: auto;
-		display: block;
-	}
-
-	.tab-content.visible {
-		opacity: 1;
-		transform: translateY(0);
 	}
 
 	/* Quote Section */
@@ -986,58 +850,6 @@
 		margin-right: auto;
 	}
 
-	.cta-buttons {
-		display: flex;
-		justify-content: center;
-		gap: 0.8rem;
-		flex-wrap: wrap;
-	}
-
-	.btn {
-		padding: 1rem 2rem;
-		border-radius: 12px;
-		text-decoration: none;
-		font-weight: 600;
-		transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-		border: 2px solid rgba(139, 92, 246, 0.3);
-		position: relative;
-		overflow: hidden;
-		backdrop-filter: blur(10px);
-		box-shadow:
-			0 10px 30px rgba(0, 0, 0, 0.3),
-			inset 0 0 20px rgba(139, 92, 246, 0.1);
-	}
-
-	.btn-primary {
-		background: linear-gradient(
-			135deg,
-			var(--color-accent-purple) 0%,
-			var(--color-accent-pink) 100%
-		);
-		color: white;
-	}
-
-	.btn::before {
-		content: '';
-		position: absolute;
-		inset: 0;
-		background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%);
-		opacity: 0;
-		transition: opacity 0.3s ease;
-	}
-
-	.btn-primary:hover {
-		transform: translateY(-3px) scale(1.02);
-		border-color: rgba(139, 92, 246, 0.8);
-		box-shadow:
-			0 20px 50px rgba(139, 92, 246, 0.5),
-			inset 0 0 40px rgba(139, 92, 246, 0.2);
-	}
-
-	.btn-primary:hover::before {
-		opacity: 1;
-	}
-
 	/* Responsive Design */
 	@media (max-width: 1024px) {
 		.hero-content-grid {
@@ -1164,13 +976,8 @@
 			font-size: 0.9rem;
 		}
 
-		.cta-buttons {
-			flex-direction: column;
-			align-items: center;
-		}
-
-		.btn {
-			width: 200px;
+		.sphere-instructions p {
+			font-size: 0.75rem;
 		}
 	}
 </style>
