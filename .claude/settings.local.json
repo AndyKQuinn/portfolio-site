@@ -10,7 +10,9 @@
       "Bash(npm run test:unit:*)",
       "Bash(npx playwright install:*)",
       "Bash(npm run check:*)",
-      "Bash(timeout 10 npm run dev:*)"
+      "Bash(timeout 10 npm run dev:*)",
+      "WebFetch(domain:tympanus.net)",
+      "Bash(git log:*)"
     ],
     "deny": [],
     "ask": []
