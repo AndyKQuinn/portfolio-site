@@ -3,8 +3,8 @@
 	import { gsap } from 'gsap';
 	import { ScrollTrigger } from 'gsap/ScrollTrigger';
 	import Lenis from 'lenis';
-	import Button from '../components/Button.svelte';
-	import RollingText from '../components/RollingText.svelte';
+	import Button from '$lib/components/Button.svelte';
+	import RollingText from '$lib/components/RollingText.svelte';
 
 	let heroSection: HTMLElement;
 	let signatureText: HTMLElement;

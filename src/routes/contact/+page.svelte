@@ -1,26 +1,10 @@
 <script lang="ts">
-	import { fly, fade } from 'svelte/transition';
-	import Button from '../../components/Button.svelte';
-	import { env } from '$env/dynamic/public';
-	import enhance from 'svelte-captcha-enhance';
+	import { fly } from 'svelte/transition';
 
 	// Handle external link clicks
 	function handleExternalLink(url: string) {
 		window.open(url, '_blank', 'noopener,noreferrer');
 	}
-
-	let form: HTMLFormElement;
-	let formData = {
-		name: '',
-		email: '',
-		subject: '',
-		message: ''
-	};
-	let isSubmitting = false;
-	let submitStatus = '';
-	let formErrors: Record<string, string> = {};
-
-	const siteKey = env.PUBLIC_HCAPTCHA_SITE_KEY || '';
 
 	// Contact methods data
 	const contactMethods = [
@@ -46,80 +30,6 @@
 			description: 'Check out my code and projects'
 		}
 	];
-
-	function validateForm() {
-		formErrors = {};
-
-		if (!formData.name.trim()) {
-			formErrors.name = 'Name is required';
-		}
-
-		if (!formData.email.trim()) {
-			formErrors.email = 'Email is required';
-		} else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-			formErrors.email = 'Please enter a valid email address';
-		}
-
-		if (!formData.subject.trim()) {
-			formErrors.subject = 'Subject is required';
-		}
-
-		if (!formData.message.trim()) {
-			formErrors.message = 'Message is required';
-		} else if (formData.message.trim().length < 10) {
-			formErrors.message = 'Message must be at least 10 characters long';
-		}
-
-		return Object.keys(formErrors).length === 0;
-	}
-
-	async function handleSubmit({ formData: data }: { formData: FormData }) {
-		if (!validateForm()) {
-			return;
-		}
-
-		isSubmitting = true;
-		submitStatus = '';
-
-		return async ({ result }: { result: any }) => {
-			try {
-				const response = await fetch('/api/contact', {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json'
-					},
-					body: JSON.stringify({
-						name: data.get('name'),
-						email: data.get('email'),
-						subject: data.get('subject'),
-						message: data.get('message'),
-						captcha: data.get('h-captcha-response')
-					})
-				});
-
-				const responseData = await response.json();
-
-				if (!response.ok) {
-					throw new Error(responseData.error || 'Network response was not ok');
-				}
-
-				// Reset form
-				formData = {
-					name: '',
-					email: '',
-					subject: '',
-					message: ''
-				};
-
-				submitStatus = 'success';
-			} catch (error) {
-				console.error('Form submission error:', error);
-				submitStatus = 'error';
-			} finally {
-				isSubmitting = false;
-			}
-		};
-	}
 </script>
 
 <svelte:head>
@@ -128,153 +38,36 @@
 		name="description"
 		content="Get in touch with Andy K Quinn for collaborations, opportunities, or just to say hello!"
 	/>
-	<script src="https://js.hcaptcha.com/1/api.js" async defer></script>
 </svelte:head>
 
 <section class="contact-hero">
 	<div class="hero-content" in:fly={{ y: 50, duration: 800 }}>
 		<h1>Let's Connect</h1>
 		<p class="hero-subtitle">
-			I'd love to hear from you. Send me a message and I'll respond as soon as possible.
+			I'd love to hear from you. Reach out through any of the channels below.
 		</p>
 	</div>
 </section>
 
 <section class="contact-content">
 	<div class="container">
-		<div class="contact-grid">
-			<!-- Contact Form -->
-			<div class="form-section" in:fly={{ x: -50, duration: 800, delay: 200 }}>
-				<h2>Send a Message</h2>
-				<form
-					bind:this={form}
-					method="POST"
-					use:enhance={{ type: 'hcaptcha', submit: handleSubmit }}
-					class="contact-form"
+		<div class="contact-methods">
+			{#each contactMethods as method, index (method.platform)}
+				<button
+					type="button"
+					class="contact-method"
+					in:fly={{ y: 30, duration: 600, delay: 200 + index * 100 }}
+					onclick={() => handleExternalLink(method.href)}
+					data-href={method.href}
 				>
-					<div class="form-group">
-						<label for="name">Name *</label>
-						<input
-							type="text"
-							id="name"
-							bind:value={formData.name}
-							class:error={formErrors.name}
-							required
-						/>
-						{#if formErrors.name}
-							<span class="error-message">{formErrors.name}</span>
-						{/if}
+					<div class="method-icon">{method.icon}</div>
+					<div class="method-content">
+						<h3>{method.platform}</h3>
+						<p class="method-value">{method.value}</p>
+						<p class="method-description">{method.description}</p>
 					</div>
-
-					<div class="form-group">
-						<label for="email">Email *</label>
-						<input
-							type="email"
-							id="email"
-							bind:value={formData.email}
-							class:error={formErrors.email}
-							required
-						/>
-						{#if formErrors.email}
-							<span class="error-message">{formErrors.email}</span>
-						{/if}
-					</div>
-
-					<div class="form-group">
-						<label for="subject">Subject *</label>
-						<input
-							type="text"
-							id="subject"
-							bind:value={formData.subject}
-							class:error={formErrors.subject}
-							required
-						/>
-						{#if formErrors.subject}
-							<span class="error-message">{formErrors.subject}</span>
-						{/if}
-					</div>
-
-					<div class="form-group">
-						<label for="message">Message *</label>
-						<textarea
-							id="message"
-							bind:value={formData.message}
-							class:error={formErrors.message}
-							rows="6"
-							required
-						></textarea>
-						{#if formErrors.message}
-							<span class="error-message">{formErrors.message}</span>
-						{/if}
-					</div>
-
-					<!-- hCaptcha -->
-					<div class="form-group">
-						<div class="hcaptcha-container">
-							<div class="h-captcha" data-sitekey={siteKey} data-theme="dark"></div>
-						</div>
-						{#if formErrors.captcha}
-							<span class="error-message">{formErrors.captcha}</span>
-						{/if}
-					</div>
-
-					<div class="submit-btn-wrapper">
-						<Button type="submit" disabled={isSubmitting}>
-							{#if isSubmitting}
-								<span class="spinner"></span>
-								Sending...
-							{:else}
-								Send Message
-								<svg
-									width="20"
-									height="20"
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									class="arrow-icon"
-								>
-									<line x1="5" y1="12" x2="19" y2="12"></line>
-									<polyline points="12,5 19,12 12,19"></polyline>
-								</svg>
-							{/if}
-						</Button>
-					</div>
-
-					{#if submitStatus === 'success'}
-						<div class="status-message success" in:fade>✅ Message sent successfully!</div>
-					{/if}
-
-					{#if submitStatus === 'error'}
-						<div class="status-message error" in:fade>
-							❌ Something went wrong. Please try again.
-						</div>
-					{/if}
-				</form>
-			</div>
-
-			<!-- Contact Methods -->
-			<div class="methods-section" in:fly={{ x: 50, duration: 800, delay: 400 }}>
-				<h2>Other Ways to Reach Me</h2>
-				<div class="contact-methods">
-					{#each contactMethods as method, index (method.platform)}
-						<button
-							type="button"
-							class="contact-method"
-							in:fly={{ y: 30, duration: 600, delay: 600 + index * 100 }}
-							onclick={() => handleExternalLink(method.href)}
-							data-href={method.href}
-						>
-							<div class="method-icon">{method.icon}</div>
-							<div class="method-content">
-								<h3>{method.platform}</h3>
-								<p class="method-value">{method.value}</p>
-								<p class="method-description">{method.description}</p>
-							</div>
-						</button>
-					{/each}
-				</div>
-			</div>
+				</button>
+			{/each}
 		</div>
 	</div>
 </section>
@@ -289,7 +82,7 @@
 		justify-content: center;
 		position: relative;
 		overflow: hidden;
-		padding: 6rem 0 2rem; /* Reduced padding */
+		padding: 6rem 0 2rem;
 	}
 
 	.contact-hero::before {
@@ -347,169 +140,25 @@
 	}
 
 	.container {
-		max-width: 1200px;
+		max-width: 800px;
 		margin: 0 auto;
 		padding: 0 2rem;
 	}
 
-	.contact-grid {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 4rem;
-		align-items: start;
-	}
-
-	/* Form Section */
-	.form-section h2 {
-		font-size: 1.8rem;
-		font-weight: 700;
-		margin: 0 0 1.5rem 0;
-		color: white;
-	}
-
-	.contact-form {
-		background: linear-gradient(145deg, rgba(30, 15, 60, 0.95), rgba(20, 10, 40, 0.95));
-		padding: 2rem;
-		border-radius: 16px;
-		box-shadow: 0 10px 30px rgba(139, 92, 246, 0.2);
-		border: 1px solid rgba(139, 92, 246, 0.3);
-		backdrop-filter: blur(10px);
-	}
-
-	.form-group {
-		margin-bottom: 1.25rem;
-	}
-
-	.form-group label {
-		display: block;
-		font-weight: 600;
-		color: var(--color-text-light);
-		margin-bottom: 0.5rem;
-		font-size: 0.95rem;
-	}
-
-	.form-group input,
-	.form-group textarea {
-		width: 100%;
-		padding: 0.75rem;
-		border: 2px solid rgba(139, 92, 246, 0.3);
-		border-radius: 8px;
-		font-size: 0.95rem;
-		font-family: 'Inter', sans-serif;
-		transition: all 0.3s ease;
-		box-sizing: border-box;
-		background: rgba(0, 0, 0, 0.8);
-		color: white;
-	}
-
-	.form-group input:focus,
-	.form-group textarea:focus {
-		outline: none;
-		border-color: var(--color-accent-purple);
-		box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
-	}
-
-	.form-group input.error,
-	.form-group textarea.error {
-		border-color: #e53e3e;
-	}
-
-	.error-message {
-		color: #e53e3e;
-		font-size: 0.875rem;
-		margin-top: 0.25rem;
-		display: block;
-	}
-
-	.submit-btn-wrapper {
-		width: 100%;
-	}
-
-	.submit-btn-wrapper :global(button) {
-		width: 100%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.5rem;
-	}
-
-	.submit-btn-wrapper :global(.arrow-icon) {
-		transition: transform 0.3s ease;
-	}
-
-	.submit-btn-wrapper :global(button:hover:not(:disabled) .arrow-icon) {
-		transform: translateX(4px);
-	}
-
-	.hcaptcha-container {
-		display: flex;
-		justify-content: center;
-		margin: 1rem 0;
-	}
-
-	.hcaptcha-container :global(div) {
-		max-width: 100%;
-		overflow: hidden;
-	}
-
-	.spinner {
-		width: 20px;
-		height: 20px;
-		border: 2px solid rgba(255, 255, 255, 0.3);
-		border-top: 2px solid white;
-		border-radius: 50%;
-		animation: spin 1s linear infinite;
-	}
-
-	@keyframes spin {
-		0% {
-			transform: rotate(0deg);
-		}
-		100% {
-			transform: rotate(360deg);
-		}
-	}
-
-	.status-message {
-		margin-top: 1rem;
-		padding: 1rem;
-		border-radius: 8px;
-		font-weight: 500;
-	}
-
-	.status-message.success {
-		background: #f0fff4;
-		color: #2f855a;
-		border: 1px solid #9ae6b4;
-	}
-
-	.status-message.error {
-		background: #fed7d7;
-		color: #c53030;
-		border: 1px solid #feb2b2;
-	}
-
-	/* Methods Section */
-	.methods-section h2 {
-		font-size: 1.8rem;
-		font-weight: 700;
-		margin: 0 0 1.5rem 0;
-		color: white;
-	}
-
 	.contact-methods {
-		margin-bottom: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
 	}
 
 	.contact-method {
 		display: flex;
 		align-items: center;
-		gap: 1rem;
-		padding: 1.25rem;
+		gap: 1.5rem;
+		padding: 1.75rem;
 		background: linear-gradient(145deg, rgba(30, 15, 60, 0.95), rgba(20, 10, 40, 0.95));
 		border-radius: 12px;
 		box-shadow: 0 4px 15px rgba(139, 92, 246, 0.2);
-		margin-bottom: 1rem;
 		text-decoration: none;
 		color: inherit;
 		transition: all 0.3s ease;
@@ -529,9 +178,9 @@
 	}
 
 	.method-icon {
-		font-size: 1.5rem;
-		width: 50px;
-		height: 50px;
+		font-size: 2rem;
+		width: 60px;
+		height: 60px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -546,14 +195,14 @@
 	}
 
 	.method-content h3 {
-		font-size: 1.2rem;
+		font-size: 1.3rem;
 		font-weight: 600;
 		margin: 0 0 0.25rem 0;
 		color: white;
 	}
 
 	.method-value {
-		font-size: 1rem;
+		font-size: 1.05rem;
 		font-weight: 500;
 		background: linear-gradient(135deg, var(--color-accent-purple), var(--color-accent-pink));
 		-webkit-background-clip: text;
@@ -563,7 +212,7 @@
 	}
 
 	.method-description {
-		font-size: 0.9rem;
+		font-size: 0.95rem;
 		color: var(--color-text-muted);
 		margin: 0;
 		line-height: 1.4;
@@ -587,29 +236,23 @@
 			padding: 1.5rem 0 3rem;
 		}
 
-		.contact-grid {
-			grid-template-columns: 1fr;
-			gap: 2rem;
-		}
-
-		.form-section h2,
-		.methods-section h2 {
-			font-size: 1.5rem;
-			margin-bottom: 1rem;
-		}
-
-		.contact-form {
-			padding: 1.5rem;
-		}
-
 		.contact-method {
-			padding: 1rem;
+			padding: 1.25rem;
+			gap: 1rem;
 		}
 
 		.method-icon {
-			width: 45px;
-			height: 45px;
-			font-size: 1.25rem;
+			width: 50px;
+			height: 50px;
+			font-size: 1.5rem;
+		}
+
+		.method-content h3 {
+			font-size: 1.15rem;
+		}
+
+		.method-value {
+			font-size: 0.95rem;
 		}
 	}
 
@@ -622,8 +265,14 @@
 			padding: 0 1rem;
 		}
 
-		.contact-form {
-			padding: 1.25rem;
+		.contact-method {
+			padding: 1rem;
+		}
+
+		.method-icon {
+			width: 45px;
+			height: 45px;
+			font-size: 1.25rem;
 		}
 	}
 </style>
