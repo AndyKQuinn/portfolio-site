@@ -5,10 +5,11 @@
 	import Lenis from 'lenis';
 	import Button from '$lib/components/Button.svelte';
 	import RollingText from '$lib/components/RollingText.svelte';
+	import ScrollCubes from '$lib/components/ScrollCubes.svelte';
 
 	let heroSection: HTMLElement;
 	let signatureText: HTMLElement;
-	let lenis: any;
+	let scrollCubesComponent: ScrollCubes;
 
 	const projects = [
 		{
@@ -141,6 +142,7 @@
 
 	let isModalOpen = $state(false);
 	let selectedProject = $state<(typeof projects)[0] | null>(null);
+	let lenis: Lenis;
 
 	function openModal(project: (typeof projects)[0]) {
 		selectedProject = project;
@@ -189,11 +191,12 @@
 	}
 
 	onMount(() => {
-		// Initialize Lenis Smooth Scroll
+		// Initialize Lenis Smooth Scroll with enhanced settings
 		lenis = new Lenis({
-			duration: 1.2,
+			duration: 1.5,
 			easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-			smoothWheel: true
+			smoothWheel: true,
+			touchMultiplier: 2
 		});
 
 		function raf(time: number) {
@@ -203,14 +206,13 @@
 
 		requestAnimationFrame(raf);
 
-		// Register ScrollTrigger plugin and integrate with Lenis
 		gsap.registerPlugin(ScrollTrigger);
 
 		lenis.on('scroll', ScrollTrigger.update);
 
 		gsap.ticker.lagSmoothing(0);
 
-		// GSAP Animations - Float in from right with smooth fade
+		// Hero animations
 		gsap.fromTo(
 			'.signature',
 			{ opacity: 0, x: 100, scale: 0.9 },
@@ -222,6 +224,19 @@
 			{ opacity: 0, x: 60 },
 			{ opacity: 1, x: 0, duration: 0.6, delay: 0.3, ease: 'power2.out' }
 		);
+
+		// Scroll-driven cube animation between hero and experience sections
+		ScrollTrigger.create({
+			trigger: '.projects-section',
+			start: 'top bottom',
+			end: 'top top',
+			scrub: 0.5,
+			onUpdate: (self) => {
+				if (scrollCubesComponent) {
+					scrollCubesComponent.updateScrollProgress(self.progress);
+				}
+			}
+		});
 
 		// Animate project cards on scroll
 		gsap.fromTo(
@@ -240,6 +255,23 @@
 			}
 		);
 
+		// Animate skills section
+		gsap.fromTo(
+			'.carousel-section',
+			{ opacity: 0, y: 50 },
+			{
+				opacity: 1,
+				y: 0,
+				duration: 0.8,
+				stagger: 0.2,
+				ease: 'power2.out',
+				scrollTrigger: {
+					trigger: '.skills-section',
+					start: 'top 70%'
+				}
+			}
+		);
+
 		// Cleanup
 		return () => {
 			lenis.destroy();
@@ -251,8 +283,11 @@
 <svelte:head>
 	<title>Andy K Quinn - Professional Developer & Diversity Advocate</title>
 	<meta name="description" content="Andy K Quinn - Professional Developer & Diversity Advocate" />
-	<link rel="stylesheet" href="https://unpkg.com/lenis@1.0.45/dist/lenis.css" />
+	<link rel="stylesheet" href="https://unpkg.com/lenis@1.3.15/dist/lenis.css" />
 </svelte:head>
+
+<!-- 3D Scroll Cubes -->
+<ScrollCubes bind:this={scrollCubesComponent} />
 
 <!-- Hero Section -->
 <section class="hero" bind:this={heroSection}>

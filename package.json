@@ -32,7 +32,6 @@
 		"@tailwindcss/vite": "^4.0.0",
 		"@types/node": "^20",
 		"@vitest/browser": "^3.2.3",
-		"drizzle-orm": "^0.40.0",
 		"eslint": "^9.22.0",
 		"eslint-config-prettier": "^10.0.1",
 		"eslint-plugin-svelte": "^3.0.0",
@@ -58,9 +57,9 @@
 		"@slidy/animation": "^1.0.9",
 		"@slidy/svelte": "^3.5.3",
 		"@types/three": "^0.181.0",
+		"drizzle-orm": "^0.44.7",
 		"gsap": "^3.13.0",
 		"lenis": "^1.3.15",
-		"svelte-captcha-enhance": "^1.2.3",
 		"three": "^0.181.1"
 	},
 	"optionalDependencies": {

@@ -193,3 +193,33 @@ button:focus:not(:focus-visible) {
 	}
 }
 
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+	width: 12px;
+}
+
+::-webkit-scrollbar-track {
+	background: var(--color-dark-bg);
+	border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+	background: var(--color-accent-purple);
+	border-radius: 10px;
+	border: 2px solid var(--color-dark-bg);
+	transition: all 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: #a78bfa;
+	border: 2px solid var(--color-deep-purple);
+	box-shadow: 0 0 10px rgba(139, 92, 246, 0.5),
+				0 0 20px rgba(236, 72, 153, 0.3);
+}
+
+/* Firefox Scrollbar */
+* {
+	scrollbar-width: thin;
+	scrollbar-color: var(--color-accent-purple) var(--color-dark-bg);
+}
+
