@@ -590,9 +590,10 @@
 	<div class="container">
 		<div class="footer-content">
 			<div class="footer-social">
-				<a href="https://github.com" target="_blank" rel="noopener noreferrer">GitHub</a>
-				<a href="https://linkedin.com" target="_blank" rel="noopener noreferrer">LinkedIn</a>
-				<a href="https://twitter.com" target="_blank" rel="noopener noreferrer">Twitter</a>
+				<a href="https://github.com/AndyKQuinn" target="_blank" rel="noopener noreferrer">GitHub</a>
+				<a href="https://www.linkedin.com/in/andy-guice/" target="_blank" rel="noopener noreferrer"
+					>LinkedIn</a
+				>
 			</div>
 			<p class="footer-text">© {new Date().getFullYear()} Andy K Quinn. All rights reserved.</p>
 		</div>
@@ -1399,7 +1400,6 @@
 			padding: 1.2rem 1.75rem;
 		}
 
-
 		.site-footer {
 			padding: 3rem 0;
 		}
@@ -1519,7 +1519,6 @@
 			padding: 1.1rem 1.5rem;
 			font-size: 1.05rem;
 		}
-
 
 		.footer-social {
 			flex-direction: column;
