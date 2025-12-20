@@ -27,3 +27,4 @@ vite.config.ts.timestamp-*
 *.db
 
 package-lock.json
+.claude
